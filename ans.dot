@@ -1,0 +1,19 @@
+digraph Automat {
+    node [shape = circle];
+    0 [style = "bold"];
+    0 -> 0 [label = "0"];
+    0 -> 6 [label = "1"];
+    1 -> 2 [label = "0"];
+    1 -> 7 [label = "1"];
+    2 -> 3 [label = "0"];
+    2 -> 1 [label = "1"];
+    3 -> 1 [label = "0"];
+    3 -> 4 [label = "1"];
+    4 -> 7 [label = "1"];
+    5 -> 1 [label = "0"];
+    5 -> 6 [label = "1"];
+    6 -> 5 [label = "0"];
+    6 -> 5 [label = "1"];
+    7 -> 7 [label = "0"];
+    7 -> 7 [label = "1"];
+}
