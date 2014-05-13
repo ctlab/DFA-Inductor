@@ -29,13 +29,13 @@ public class ConsistencyGraph {
 
 		findConsistentEdges(apta.getRoot());
 	}
-	
+
 	public Map<Integer, Set<Integer>> getEdges() {
 		return edges;
 	}
 
 	private void findConsistentEdges(Node node) {
-		int thisNumber = node.getNumber();		
+		int thisNumber = node.getNumber();
 		for (Entry<String, Node> entry : node.getChildren().entrySet()) {
 			findConsistentEdges(entry.getValue());
 		}
@@ -45,13 +45,14 @@ public class ConsistencyGraph {
 			int childNumber = child.getNumber();
 			boolean isAcceptable = apta.isAcceptable(thisNumber);
 			boolean isRejectable = apta.isRejectable(thisNumber);
-			Set<Integer> inequalityWithChild = new HashSet<>(edges.get(childNumber));
+			Set<Integer> inequalityWithChild = new HashSet<>(
+					edges.get(childNumber));
 			for (int i : inequalityWithChild) {
 				Node compareWith = apta.getNode(i);
 				Node parent = compareWith.getParent(label);
 				if (compareWith.getNumber() != childNumber
-						&& edges.get(childNumber).contains(compareWith.getNumber())
-						&& parent != null) {
+						&& edges.get(childNumber).contains(
+								compareWith.getNumber()) && parent != null) {
 					edges.get(thisNumber).add(parent.getNumber());
 					edges.get(parent.getNumber()).add(thisNumber);
 				}
@@ -63,7 +64,8 @@ public class ConsistencyGraph {
 				child = child.getChildren().get(label);
 				childNumber = child.getNumber();
 				buffer.add(childNumber);
-				if (isAcceptable != apta.isAcceptable(childNumber) && isRejectable != apta.isRejectable(childNumber)) {
+				if (isAcceptable != apta.isAcceptable(childNumber)
+						&& isRejectable != apta.isRejectable(childNumber)) {
 					isInequality = true;
 				}
 			}

@@ -11,7 +11,7 @@ import java.util.Set;
 import java.util.StringTokenizer;
 
 public class APTA {
-	
+
 	private Node root;
 	private int size;
 	private int alphaSize;
@@ -19,11 +19,10 @@ public class APTA {
 	private Set<Integer> acceptableNodes;
 	private Set<Integer> rejectableNodes;
 	private Map<Integer, Node> indexesOfNodes;
-	
-	
+
 	StringTokenizer st;
 	BufferedReader br;
-	
+
 	public APTA() {
 		acceptableNodes = new HashSet<>();
 		rejectableNodes = new HashSet<>();
@@ -33,7 +32,7 @@ public class APTA {
 		root = new Node(size);
 		indexesOfNodes.put(size++, root);
 	}
-	
+
 	public APTA(InputStream is) throws IOException {
 		br = new BufferedReader(new InputStreamReader(is));
 		size = 0;
@@ -41,20 +40,20 @@ public class APTA {
 		rejectableNodes = new HashSet<>();
 		indexesOfNodes = new HashMap<>();
 		alphabet = new HashSet<>();
-		
+
 		int lines = nextInt();
 		int alphaSize = nextInt();
 		this.alphaSize = alphaSize;
 		root = new Node(size);
 		indexesOfNodes.put(size++, root);
-		
+
 		Node currentNode;
 		Node newNode;
 		String label;
-		
+
 		for (int line = 0; line < lines; line++) {
 			currentNode = root;
-			int acc = nextInt();
+			int status = nextInt();
 			int len = nextInt();
 			for (int i = 0; i < len; i++) {
 				label = nextToken();
@@ -69,52 +68,53 @@ public class APTA {
 					currentNode = newNode;
 				}
 			}
-			if (acc == 1) {
+			if (status == 1) {
 				acceptableNodes.add(currentNode.getNumber());
 			} else {
 				rejectableNodes.add(currentNode.getNumber());
 			}
+			currentNode.setStatus(status);
 		}
 	}
-	
+
 	public boolean isAcceptable(int number) {
 		return acceptableNodes.contains(number);
 	}
-	
+
 	public boolean isRejectable(int number) {
 		return rejectableNodes.contains(number);
 	}
-	
+
 	public int getSize() {
 		return size;
 	}
-	
+
 	public int getAlphaSize() {
 		return alphabet.size();
 	}
-	
+
 	public Node getRoot() {
 		return root;
 	}
-	
+
 	public Set<Integer> getAcceptableNodes() {
 		return acceptableNodes;
 	}
-	
+
 	public Set<Integer> getRejectableNodes() {
 		return rejectableNodes;
 	}
-	
+
 	public Set<String> getAlphabet() {
 		return alphabet;
 	}
-	
-	//node can be null
+
+	// node can be null
 	public Node getNode(int i) {
 		Node node = indexesOfNodes.get(i);
 		return node;
 	}
-	
+
 	private String nextToken() throws IOException {
 		while (st == null || !st.hasMoreTokens()) {
 			String s = br.readLine();
@@ -125,7 +125,7 @@ public class APTA {
 		}
 		return st.nextToken();
 	}
-	
+
 	private int nextInt() throws IOException {
 		return Integer.parseInt(nextToken());
 	}

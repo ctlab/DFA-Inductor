@@ -1,6 +1,5 @@
 package ru.ifmo.rain.zakirzyanov.DFASAT;
 
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -19,7 +18,7 @@ public class Main {
 
 	public static void main(String[] args) throws IOException,
 			ContradictionException, TimeoutException {
-		InputStream is = new FileInputStream(test[1]);
+		InputStream is = new FileInputStream(test[0]);
 		APTA apta = new APTA(is);
 		ConsistencyGraph cg = new ConsistencyGraph(apta);
 
