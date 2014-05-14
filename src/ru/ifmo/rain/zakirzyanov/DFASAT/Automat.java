@@ -5,8 +5,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import javafx.animation.Transition;
-
 public class Automat {
 	private Node start;
 	List<Node> states;
