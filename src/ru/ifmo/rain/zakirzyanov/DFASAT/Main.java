@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
 
+import org.sat4j.reader.ParseFormatException;
 import org.sat4j.specs.ContradictionException;
 import org.sat4j.specs.TimeoutException;
 
@@ -17,7 +18,7 @@ public class Main {
 	private static final String resultFilePath = "ans.dot";
 
 	public static void main(String[] args) throws IOException,
-			ContradictionException, TimeoutException {
+			ContradictionException, TimeoutException, ParseFormatException {
 		InputStream is = new FileInputStream(test[0]);
 		APTA apta = new APTA(is);
 		ConsistencyGraph cg = new ConsistencyGraph(apta);
