@@ -1,6 +1,10 @@
 package ru.ifmo.rain.zakirzyanov.DFASAT;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
@@ -33,11 +37,11 @@ public class SATSolver {
 	// z[i] - vertex with color i is Acceptable
 	private int[] z;
 	private IProblem problem;
-	private String DimacsFile = "DimacsFile.cnf";
+	private String DimacsFile = "dimacsFile.cnf";
+	private String tmpFile = "tmp";
 	private String satSolverFile = null;
 	private String ansLine = null;
-	private StringBuilder s;
-	private PrintWriter pw;
+	private PrintWriter pwDF;
 	private int countClauses;
 
 	public SATSolver(APTA apta, ConsistencyGraph cg, int colors)
@@ -50,9 +54,8 @@ public class SATSolver {
 		this.x = new int[vertices][colors];
 		this.y = new HashMap<String, int[][]>();
 		this.z = new int[colors];
-		this.s = new StringBuilder();
 		this.countClauses = 0;
-		this.pw = new PrintWriter(this.DimacsFile);
+		this.pwDF = new PrintWriter(this.DimacsFile);
 		initXYZ();
 		generateFile();
 		problem = build();
@@ -69,9 +72,8 @@ public class SATSolver {
 		this.x = new int[vertices][colors];
 		this.y = new HashMap<String, int[][]>();
 		this.z = new int[colors];
-		this.pw = new PrintWriter(this.DimacsFile);
+		this.pwDF = new PrintWriter(this.DimacsFile);
 		this.satSolverFile = satSolverFile;
-		this.s = new StringBuilder();
 		initXYZ();
 		generateFile();
 	}
@@ -189,20 +191,34 @@ public class SATSolver {
 		}
 	}
 
-	private void generateFile() {
+	private void generateFile() throws IOException {
+		
+		File tmp = new File(tmpFile);
+		PrintWriter tmpPW = new PrintWriter(tmp);
 
-		printOneAtLeast();
-		printAccVertDiffColorRej();
-		printParrentRelationIsSet();
-		printParrentRelationAtMostOneColor();
-		printOneAtMost();
-		printParrentRelationAtLeastOneColor();
-		printParrentRelationForces();
-		printConflictsFromCG();
+		printOneAtLeast(tmpPW);
+		printAccVertDiffColorRej(tmpPW);
+		printParrentRelationIsSet(tmpPW);
+		printParrentRelationAtMostOneColor(tmpPW);
+		printOneAtMost(tmpPW);
+		printParrentRelationAtLeastOneColor(tmpPW);
+		printParrentRelationForces(tmpPW);
+		printConflictsFromCG(tmpPW);
+		tmpPW.close();
 
-		pw.print("p cnf " + (maxVar - 1) + " " + countClauses + "\n");
-		pw.print(s);
-		pw.close();
+		pwDF.print("p cnf " + (maxVar - 1) + " " + countClauses + "\n");
+		
+		BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(tmp)));
+ 		
+		String aLine = null;
+		while ((aLine = in.readLine()) != null) {
+			pwDF.print(aLine + "\n");
+		}
+ 
+		in.close();
+ 		pwDF.close();
+ 		
+ 		tmp.delete();
 	}
 
 	private IProblem build() throws ContradictionException, ParseFormatException, IOException {
@@ -215,30 +231,30 @@ public class SATSolver {
 	
 	// Each vertex has at least one color.
 	// x_{v,1} or x_{v,2} or ... or x_{v, |C|}
-	private void printOneAtLeast() {
+	private void printOneAtLeast(PrintWriter tmpPW) {
 		for (int v = 0; v < vertices; v++) {
 			for (int i = 0; i < colors; i++) {
-				s.append(x[v][i] + " ");
+				tmpPW.print(x[v][i] + " ");
 			}
-			s.append("0\n");
+			tmpPW.print("0\n");
 			countClauses++;
 		}
 
 		// root has 0 color
-		s.append(x[0][0] + " 0\n");
+		tmpPW.print(x[0][0] + " 0\n");
 		countClauses++;
 	}
 
 	// Accepting vertices cannot have the same color as rejecting vertices
 	// (!x_{v,i} or z_i) and (!x_{w,i} or !z_i), where v is acc, w is rej
-	private void printAccVertDiffColorRej() {
+	private void printAccVertDiffColorRej(PrintWriter tmpPW) {
 		for (int i = 0; i < colors; i++) {
 			for (Integer acc : apta.getAcceptableNodes()) {
-				s.append(-x[acc][i] + " " + z[i] + " 0\n");
+				tmpPW.print(-x[acc][i] + " " + z[i] + " 0\n");
 				countClauses++;
 			}
 			for (Integer rej : apta.getRejectableNodes()) {
-				s.append(-x[rej][i] + " " + -z[i] + " 0\n");
+				tmpPW.print(-x[rej][i] + " " + -z[i] + " 0\n");
 				countClauses++;
 			}
 		}
@@ -246,13 +262,13 @@ public class SATSolver {
 
 	// A parent relation is set when a vertex and its parent are colored
 	// (y_{l(v),i,j} or !x_{p(v),i} or !x_{v,i})
-	private void printParrentRelationIsSet() {
+	private void printParrentRelationIsSet(PrintWriter tmpPW) {
 		for (int v = 0; v < vertices; v++) {
 			for (int i = 0; i < colors; i++) {
 				for (int j = 0; j < colors; j++) {
 					Node cur = apta.getNode(v);
 					for (Entry<String, Node> e : cur.getParents().entrySet()) {
-						s.append(y.get(e.getKey())[i][j] + " "
+						tmpPW.print(y.get(e.getKey())[i][j] + " "
 								+ -x[e.getValue().getNumber()][i] + " "
 								+ -x[v][j] + " 0\n");
 						countClauses++;
@@ -264,12 +280,12 @@ public class SATSolver {
 
 	// each parent relation can target at most one color
 	// (!y_{a,i,h} or !y_{a,i,j}) where a in Alphabet, h < j
-	private void printParrentRelationAtMostOneColor() {
+	private void printParrentRelationAtMostOneColor(PrintWriter tmpPW) {
 		for (String st : apta.getAlphabet()) {
 			for (int i = 0; i < colors; i++) {
 				for (int j = 0; j < colors; j++) {
 					for (int h = 0; h < j; h++) {
-						s.append(-y.get(st)[i][h] + " " + -y.get(st)[i][j]
+						tmpPW.print(-y.get(st)[i][h] + " " + -y.get(st)[i][j]
 								+ " 0\n");
 						countClauses++;
 					}
@@ -280,11 +296,11 @@ public class SATSolver {
 
 	// each vertex has at most one color
 	// (!x_{v,i} or !x_{v,j}) where i < j
-	private void printOneAtMost() {
+	private void printOneAtMost(PrintWriter tmpPW) {
 		for (int v = 0; v < vertices; v++) {
 			for (int i = 0; i < colors; i++) {
 				for (int j = i + 1; j < colors; j++) {
-					s.append(-x[v][i] + " " + -x[v][j] + " 0\n");
+					tmpPW.print(-x[v][i] + " " + -x[v][j] + " 0\n");
 					countClauses++;
 				}
 			}
@@ -293,15 +309,15 @@ public class SATSolver {
 
 	// each parent relation must target at least one color
 	// (!y_{a,i,h} or !y_{a,i,j}) where a in Alphabet, h < j
-	private void printParrentRelationAtLeastOneColor() {
+	private void printParrentRelationAtLeastOneColor(PrintWriter tmpPW) {
 		for (String st : apta.getAlphabet()) {
 			for (int i = 0; i < colors; i++) {
 				VecInt vecInt = new VecInt();
 				for (int j = 0; j < colors; j++) {
 					vecInt.push(y.get(st)[i][j]);
-					s.append(y.get(st)[i][j] + " ");
+					tmpPW.print(y.get(st)[i][j] + " ");
 				}
-				s.append("0\n");
+				tmpPW.print("0\n");
 				countClauses++;
 			}
 		}
@@ -309,13 +325,13 @@ public class SATSolver {
 
 	// a parent relation forces a vertex once the parent is colored
 	// (!y_{l(v),i,j} or !x_{p(v),i} or x_{v,i})
-	private void printParrentRelationForces() {
+	private void printParrentRelationForces(PrintWriter tmpPW) {
 		for (int v = 0; v < vertices; v++) {
 			for (int i = 0; i < colors; i++) {
 				for (int j = 0; j < colors; j++) {
 					Node cur = apta.getNode(v);
 					for (Entry<String, Node> e : cur.getParents().entrySet()) {
-						s.append(-y.get(e.getKey())[i][j] + " "
+						tmpPW.print(-y.get(e.getKey())[i][j] + " "
 								+ -x[e.getValue().getNumber()][i] + " "
 								+ x[v][j] + " 0\n");
 						countClauses++;
@@ -327,7 +343,7 @@ public class SATSolver {
 
 	// all determinization conflicts explicitly added as clauses
 	// (!x_{v,i} or !x_{w,i}) where (v,w) - edge from cg
-	private void printConflictsFromCG() {
+	private void printConflictsFromCG(PrintWriter tmpPW) {
 		for (Entry<Integer, Set<Integer>> e : cg.getEdges().entrySet()) {
 			int v = e.getKey();
 			for (int w : e.getValue()) {
@@ -335,7 +351,7 @@ public class SATSolver {
 					continue;
 				}
 				for (int i = 0; i < colors; i++) {
-					s.append(-x[v][i] + " " + -x[w][i] + " 0\n");
+					tmpPW.print(-x[v][i] + " " + -x[w][i] + " 0\n");
 					countClauses++;
 				}
 			}
