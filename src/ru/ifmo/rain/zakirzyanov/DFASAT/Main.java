@@ -35,7 +35,7 @@ public class Main {
 							+ " colors was found.");
 					Automat automat = solver.getModel();
 					PrintWriter pw = new PrintWriter(resultFilePath);
-					pw.println(automat);
+					pw.print(automat + "\n");
 					pw.close();
 					break;
 				} else {
