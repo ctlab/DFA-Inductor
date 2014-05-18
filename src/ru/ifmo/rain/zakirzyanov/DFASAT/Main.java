@@ -27,7 +27,7 @@ public class Main {
 			System.out.println("======");
 			System.out.println("colors: " + colors);
 			try {
-				SATSolver solver = new SATSolver(apta, cg, colors);
+				SATSolver solver = new SATSolver(apta, cg, colors, "lingeling.exe");
 				System.out.println("Vars: " + solver.nVars());
 				System.out.println("Constraints: " + solver.nConstraints());
 				if (solver.problemIsSatisfiable()) {

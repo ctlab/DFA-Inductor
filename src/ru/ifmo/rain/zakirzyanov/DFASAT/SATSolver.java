@@ -1,6 +1,8 @@
 package ru.ifmo.rain.zakirzyanov.DFASAT;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.util.HashMap;
 import java.util.Map;
@@ -31,7 +33,9 @@ public class SATSolver {
 	// z[i] - vertex with color i is Acceptable
 	private int[] z;
 	private IProblem problem;
-	private String DimacsFile = "DimacsFile";
+	private String DimacsFile = "DimacsFile.cnf";
+	private String satSolverFile = null;
+	private String ansLine = null;
 	private StringBuilder s;
 	private PrintWriter pw;
 	private int countClauses;
@@ -55,7 +59,7 @@ public class SATSolver {
 	}
 
 	public SATSolver(APTA apta, ConsistencyGraph cg, int colors,
-			String DimacsFile) throws ContradictionException,
+			String satSolverFile) throws ContradictionException,
 			ParseFormatException, IOException {
 		this.apta = apta;
 		this.cg = cg;
@@ -65,15 +69,14 @@ public class SATSolver {
 		this.x = new int[vertices][colors];
 		this.y = new HashMap<String, int[][]>();
 		this.z = new int[colors];
-		this.DimacsFile = DimacsFile;
 		this.pw = new PrintWriter(this.DimacsFile);
+		this.satSolverFile = satSolverFile;
 		this.s = new StringBuilder();
 		initXYZ();
 		generateFile();
-		problem = build();
 	}
 
-	public int[][] getX() {
+		public int[][] getX() {
 		return x;
 	}
 
@@ -93,8 +96,29 @@ public class SATSolver {
 		return countClauses;
 	}
 
-	public boolean problemIsSatisfiable() throws TimeoutException {
-		return problem.isSatisfiable();
+	public boolean problemIsSatisfiable() throws TimeoutException, IOException {
+		if (satSolverFile == null) {
+			return problem.isSatisfiable();
+		} else {
+			//Process process = new ProcessBuilder(satSolverFile + " " + DimacsFile).start();
+			Process process = Runtime.getRuntime().exec(satSolverFile + " " + DimacsFile);
+			BufferedReader br = new BufferedReader(new InputStreamReader(process.getInputStream()));
+			String line;
+			while((line = br.readLine()) != null) {
+				if (line.equals("s SATISFIABLE")) {
+					ansLine = "";
+				}
+				if (line.charAt(0) == 'v') {
+					ansLine += line.substring(2, line.length()) + " ";
+				}
+			}
+			br.close();
+			if (ansLine != null) {
+				return true;
+			} else {
+				return false;
+			}
+		}
 	}
 
 	// must be called after problemIsSatisfiable
@@ -102,7 +126,17 @@ public class SATSolver {
 		Automat automat = new Automat(colors);
 		// map[vertex][color]
 		Map<Integer, Integer> colorsOfNodes = new HashMap<>();
-		int[] model = problem.model();
+		int[] model;
+		if (satSolverFile == null) {
+			model = problem.model();
+		} else {
+			String[] strings = ansLine.split(" ");
+		    model = new int[strings.length];
+		    for (int i = 0; i < strings.length; i++) {
+		        model[i] = Integer.parseInt(strings[i]);
+		    }
+		}
+		
 		for (int i = 0; i < colors; i++) {
 			for (int v = 0; v < vertices; v++) {
 				if (model[x[v][i] - 1] > 0) {
@@ -130,29 +164,6 @@ public class SATSolver {
 		}
 		return automat;
 	}
-
-	private void generateFile() {
-
-		printOneAtLeast();
-		printAccVertDiffColorRej();
-		printParrentRelationIsSet();
-		printParrentRelationAtMostOneColor();
-		printOneAtMost();
-		printParrentRelationAtLeastOneColor();
-		printParrentRelationForces();
-		printConflictsFromCG();
-
-		pw.println("p cnf " + (maxVar - 1) + " " + countClauses);
-		pw.print(s);
-		pw.close();
-	}
-
-	private IProblem build() throws ContradictionException, ParseFormatException, IOException {
-		ISolver solver = SolverFactory.newDefault();
-		Reader reader = new DimacsReader(solver);
-		IProblem problem = reader.parseInstance(DimacsFile);
-		return problem;
-	}
 	
 	private void initXYZ() {
 		for (int v = 0; v < vertices; v++) {
@@ -178,6 +189,30 @@ public class SATSolver {
 		}
 	}
 
+	private void generateFile() {
+
+		printOneAtLeast();
+		printAccVertDiffColorRej();
+		printParrentRelationIsSet();
+		printParrentRelationAtMostOneColor();
+		printOneAtMost();
+		printParrentRelationAtLeastOneColor();
+		printParrentRelationForces();
+		printConflictsFromCG();
+
+		pw.print("p cnf " + (maxVar - 1) + " " + countClauses + "\n");
+		pw.print(s);
+		pw.close();
+	}
+
+	private IProblem build() throws ContradictionException, ParseFormatException, IOException {
+		ISolver solver = SolverFactory.newDefault();
+		Reader reader = new DimacsReader(solver);
+		IProblem problem = reader.parseInstance(DimacsFile);
+		return problem;
+	}
+	
+	
 	// Each vertex has at least one color.
 	// x_{v,1} or x_{v,2} or ... or x_{v, |C|}
 	private void printOneAtLeast() {

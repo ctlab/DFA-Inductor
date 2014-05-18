@@ -15,7 +15,7 @@ public class ConsistencyGraph {
 		this.apta = apta;
 
 		for (int i = 0; i < apta.getSize(); i++) {
-			edges.put(i, new HashSet<>());
+			edges.put(i, new HashSet<Integer>());
 		}
 		Set<Integer> acceptableNodes = apta.getAcceptableNodes();
 		Set<Integer> rejectableNodes = apta.getRejectableNodes();

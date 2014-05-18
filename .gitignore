@@ -1,3 +1,5 @@
 ans.dot
 /bin
 .*
+*.exe
+*.cnf
