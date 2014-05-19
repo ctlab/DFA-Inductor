@@ -4,8 +4,11 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.StringTokenizer;
@@ -14,6 +17,7 @@ public class APTA {
 
 	private Node root;
 	private int size;
+	@SuppressWarnings("unused")
 	private int alphaSize;
 	private Set<String> alphabet;
 	private Set<Integer> acceptableNodes;

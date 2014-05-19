@@ -14,7 +14,7 @@ public class Main {
 	private static final String[] test = { "0_training.txt.dat",
 			"01_training.txt.dat", "1_training.txt.dat", "10_training.txt.dat",
 			"50_training.txt.dat" };
-	private static final int MAX_COLORS = 100;
+	private static final int MAX_COLORS = 10;
 	private static final String resultFilePath = "ans.dot";
 
 	public static void main(String[] args) throws IOException,
@@ -27,7 +27,7 @@ public class Main {
 			System.out.println("======");
 			System.out.println("colors: " + colors);
 			try {
-				SATSolver solver = new SATSolver(apta, cg, colors, "lingeling.exe");
+				SATSolver solver = new SATSolver(apta, cg, colors);
 				System.out.println("Vars: " + solver.nVars());
 				System.out.println("Constraints: " + solver.nConstraints());
 				if (solver.problemIsSatisfiable()) {
