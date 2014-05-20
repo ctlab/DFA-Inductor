@@ -29,23 +29,25 @@ public class DimacsFileGenerator {
 	private String tmpFile = "tmp";
 	private String dimacsFile;
 	private int countClauses = 0;
+	private boolean useSB;
 
-	public DimacsFileGenerator(APTA apta, ConsistencyGraph cg, int colors)
-			throws IOException {
-		init(apta, cg, colors, "dimacsFile.cnf");
+	public DimacsFileGenerator(APTA apta, ConsistencyGraph cg, int colors,
+			boolean useSB) throws IOException {
+		init(apta, cg, colors, useSB, "dimacsFile.cnf");
 	}
 
 	public DimacsFileGenerator(APTA apta, ConsistencyGraph cg, int colors,
-			String dimacsFile) throws IOException {
-		init(apta, cg, colors, dimacsFile);
+			boolean useSB, String dimacsFile) throws IOException {
+		init(apta, cg, colors, useSB, dimacsFile);
 	}
 
 	@SuppressWarnings("unchecked")
 	private void init(APTA apta, ConsistencyGraph cg, int colors,
-			String dimacsFile) throws IOException {
+			boolean useSB, String dimacsFile) throws IOException {
 		this.apta = apta;
 		this.cg = cg;
 		this.colors = colors;
+		this.useSB = useSB;
 		this.maxVar = 1;
 		this.vertices = apta.getSize();
 		this.dimacsFile = dimacsFile;
@@ -54,10 +56,11 @@ public class DimacsFileGenerator {
 		this.x = new int[vertices][colors];
 		this.y = new HashMap[colors][colors];
 		this.z = new int[colors];
-		this.e = new int[colors][colors];
-		this.m = new HashMap[colors][colors];
-		this.p = new int[colors][colors];
-
+		if (useSB) {
+			this.e = new int[colors][colors];
+			this.m = new HashMap[colors][colors];
+			this.p = new int[colors][colors];
+		}
 		for (int v = 0; v < vertices; v++) {
 			for (int i = 0; i < colors; i++) {
 				x[v][i] = maxVar++;
@@ -80,24 +83,27 @@ public class DimacsFileGenerator {
 				}
 			}
 		}
-		for (int i = 0; i < colors; i++) {
-			for (int j = i + 1; j < colors; j++) {
-				e[i][j] = maxVar++;
-			}
-		}
 
-		for (int i = 0; i < colors; i++) {
-			for (int j = i + 1; j < colors; j++) {
-				m[i][j] = new HashMap<>();
-				for (String label : alphabet) {
-					m[i][j].put(label, maxVar++);
+		if (useSB) {
+			for (int i = 0; i < colors; i++) {
+				for (int j = i + 1; j < colors; j++) {
+					e[i][j] = maxVar++;
 				}
 			}
-		}
 
-		for (int i = 1; i < colors; i++) {
-			for (int j = 0; j < i; j++) {
-				p[i][j] = maxVar++;
+			for (int i = 0; i < colors; i++) {
+				for (int j = i + 1; j < colors; j++) {
+					m[i][j] = new HashMap<>();
+					for (String label : alphabet) {
+						m[i][j].put(label, maxVar++);
+					}
+				}
+			}
+
+			for (int i = 1; i < colors; i++) {
+				for (int j = 0; j < i; j++) {
+					p[i][j] = maxVar++;
+				}
 			}
 		}
 	}
@@ -116,13 +122,15 @@ public class DimacsFileGenerator {
 		printParrentRelationAtLeastOneColor(buffer);
 		printParrentRelationForces(buffer);
 		printConflictsFromCG(buffer);
-		printSBPEdgeExist(buffer);
-		printSBPMinimalSymbol(buffer);
-		printSBPParent(buffer);
-		printSBPChildrenOrder(buffer);
-		printSBPOrderByChildrenSymbol(buffer);
-		printSBPOrderInLayer(buffer);
-		printSBPParentExist(buffer);
+		if (useSB) {
+			printSBPEdgeExist(buffer);
+			printSBPMinimalSymbol(buffer);
+			printSBPParent(buffer);
+			printSBPChildrenOrder(buffer);
+			printSBPOrderByChildrenSymbol(buffer);
+			printSBPOrderInLayer(buffer);
+			printSBPParentExist(buffer);
+		}
 		tmpPW.close();
 		countClauses = buffer.nClauses();
 

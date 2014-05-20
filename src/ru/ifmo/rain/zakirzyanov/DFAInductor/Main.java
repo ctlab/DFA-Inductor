@@ -16,6 +16,8 @@ public class Main {
 			"50_training.txt.dat" };
 	private static final int MAX_COLORS = 30;
 	private static final String resultFilePath = "ans.dot";
+	private static final boolean USE_SB = true;
+	private static final boolean DONT_USE_SB = false;
 
 	public static void main(String[] args) throws IOException,
 			ContradictionException, TimeoutException, ParseFormatException {
@@ -27,7 +29,8 @@ public class Main {
 			System.out.println("======");
 			System.out.println("colors: " + colors);
 			try {
-				String dimacsFile = new DimacsFileGenerator(apta, cg, colors, "lingeling.exe").generateFile();
+				String dimacsFile = new DimacsFileGenerator(apta, cg, colors,
+						USE_SB, "lingeling.exe").generateFile();
 				SATSolver solver = new SATSolver(apta, cg, colors, dimacsFile);
 				System.out.println("Vars: " + solver.nVars());
 				System.out.println("Constraints: " + solver.nConstraints());
@@ -44,7 +47,8 @@ public class Main {
 							+ " colors not found.");
 				}
 			} catch (ContradictionException e) {
-				System.out.println("no");
+				System.out.println("The automat with " + colors
+						+ " colors not found.");
 			}
 		}
 	}
