@@ -19,7 +19,7 @@ public class Main {
 
 	public static void main(String[] args) throws IOException,
 			ContradictionException, TimeoutException, ParseFormatException {
-		InputStream is = new FileInputStream(test[2]);
+		InputStream is = new FileInputStream(test[1]);
 		APTA apta = new APTA(is);
 		ConsistencyGraph cg = new ConsistencyGraph(apta);
 
@@ -27,7 +27,7 @@ public class Main {
 			System.out.println("======");
 			System.out.println("colors: " + colors);
 			try {
-				String dimacsFile = new DimacsFileGenerator(apta, cg, colors).generateFile();
+				String dimacsFile = new DimacsFileGenerator(apta, cg, colors, "lingeling.exe").generateFile();
 				SATSolver solver = new SATSolver(apta, cg, colors, dimacsFile);
 				System.out.println("Vars: " + solver.nVars());
 				System.out.println("Constraints: " + solver.nConstraints());
