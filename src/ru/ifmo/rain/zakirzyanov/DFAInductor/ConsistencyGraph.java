@@ -63,9 +63,9 @@ public class ConsistencyGraph {
 			while (child.getChildren().containsKey(label)) {
 				child = child.getChildren().get(label);
 				childNumber = child.getNumber();
-				buffer.add(childNumber);
 				if (isAcceptable != apta.isAcceptable(childNumber)
 						&& isRejectable != apta.isRejectable(childNumber)) {
+					buffer.add(childNumber);
 					isInequality = true;
 				}
 			}
