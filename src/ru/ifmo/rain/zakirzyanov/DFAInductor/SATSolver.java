@@ -25,6 +25,7 @@ public class SATSolver {
 	private IProblem problem;
 	private String dimacsFile = null;
 	private String satSolverFile = null;
+	private String timeoutString = " ";
 	private String ansLine = null;
 	private int countClauses;
 	private int countVars;
@@ -32,13 +33,26 @@ public class SATSolver {
 	public SATSolver(APTA apta, ConsistencyGraph cg, int colors, String dimacsFile)
 			throws ContradictionException, ParseFormatException, IOException {
 		init(apta, cg, colors, dimacsFile, null);
-		problem = build();
+		problem = build(0);
+	}
+	
+	public SATSolver(APTA apta, ConsistencyGraph cg, int colors, String dimacsFile, int timeout)
+			throws ContradictionException, ParseFormatException, IOException {
+		init(apta, cg, colors, dimacsFile, null);
+		problem = build(timeout);
 	}
 
 	public SATSolver(APTA apta, ConsistencyGraph cg, int colors, String dimacsFile,
 			String satSolverFile) throws ContradictionException,
 			ParseFormatException, IOException {
 		init(apta, cg, colors, dimacsFile, satSolverFile);
+	}
+	
+	public SATSolver(APTA apta, ConsistencyGraph cg, int colors, String dimacsFile, int timeout,
+			String satSolverFile) throws ContradictionException,
+			ParseFormatException, IOException {
+		init(apta, cg, colors, dimacsFile, satSolverFile);
+		timeoutString = " -t " + timeout + " ";
 	}
 
 	private void init(APTA apta, ConsistencyGraph cg, int colors, String dimacsFile,
@@ -61,9 +75,12 @@ public class SATSolver {
 		br.close();
 	}
 
-	private IProblem build() throws ContradictionException,
+	private IProblem build(int timeout) throws ContradictionException,
 			ParseFormatException, IOException {
 		ISolver solver = SolverFactory.newDefault();
+		if (timeout > 0) {
+			solver.setTimeout(timeout);
+		}
 		Reader reader = new DimacsReader(solver);
 		IProblem problem = reader.parseInstance(dimacsFile);
 		return problem;
@@ -76,7 +93,7 @@ public class SATSolver {
 			// Process process = new ProcessBuilder(satSolverFile + " " +
 			// DimacsFile).start();
 			Process process = Runtime.getRuntime().exec(
-					satSolverFile + " " + dimacsFile);
+					satSolverFile + timeoutString + dimacsFile);
 			BufferedReader br = new BufferedReader(new InputStreamReader(
 					process.getInputStream()));
 			String line;
@@ -86,6 +103,9 @@ public class SATSolver {
 				}
 				if (line.charAt(0) == 'v') {
 					ansLine += line.substring(2, line.length()) + " ";
+				}
+				if (line.contains("c time limit") && line.contains("reached")) {
+					throw new TimeoutException();
 				}
 			}
 			br.close();
