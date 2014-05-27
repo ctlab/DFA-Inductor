@@ -77,6 +77,9 @@ public class APTA {
 			} else {
 				rejectableNodes.add(currentNode.getNumber());
 			}
+			if (status == 0) {
+				status = Node.REJECTABLE;
+			}
 			currentNode.setStatus(status);
 		}
 	}

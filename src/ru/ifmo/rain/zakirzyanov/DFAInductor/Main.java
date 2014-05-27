@@ -13,7 +13,7 @@ public class Main {
 
 	private static final String[] test = { "0_training.txt.dat",
 			"01_training.txt.dat", "1_training.txt.dat", "10_training.txt.dat",
-			"50_training.txt.dat" };
+			"50_training.txt.dat", "randm04.02.02.05.020_0030.01.aba" };
 	private static final int MAX_COLORS = 30;
 	private static final String resultFilePath = "ans.dot";
 	private static final boolean USE_SB = true;
@@ -21,7 +21,7 @@ public class Main {
 
 	public static void main(String[] args) throws IOException,
 			ContradictionException, TimeoutException, ParseFormatException {
-		InputStream is = new FileInputStream(test[1]);
+		InputStream is = new FileInputStream(test[5]);
 		APTA apta = new APTA(is);
 		ConsistencyGraph cg = new ConsistencyGraph(apta);
 
@@ -30,8 +30,8 @@ public class Main {
 			System.out.println("colors: " + colors);
 			try {
 				String dimacsFile = new DimacsFileGenerator(apta, cg, colors,
-						USE_SB, "lingeling.exe").generateFile();
-				SATSolver solver = new SATSolver(apta, cg, colors, dimacsFile);
+						USE_SB).generateFile();
+				SATSolver solver = new SATSolver(apta, cg, colors, dimacsFile, 300, "lingeling.exe");
 				System.out.println("Vars: " + solver.nVars());
 				System.out.println("Constraints: " + solver.nConstraints());
 				if (solver.problemIsSatisfiable()) {
@@ -49,7 +49,12 @@ public class Main {
 			} catch (ContradictionException e) {
 				System.out.println("The automat with " + colors
 						+ " colors not found.");
+			} catch (TimeoutException e) {
+				System.out.println("timeot reached");
+				break;
 			}
 		}
+//		TEST test = new TEST("table");
+//		test.test();
 	}
 }

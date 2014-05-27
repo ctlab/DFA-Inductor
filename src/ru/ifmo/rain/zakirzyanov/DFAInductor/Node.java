@@ -79,6 +79,10 @@ public class Node {
 	public Map<String, Node> getChildren() {
 		return children;
 	}
+	
+	public Node getChild(String s) {
+		return children.get(s);
+	}
 
 	public void addChild(String s, Node child) {
 		children.put(s, child);
