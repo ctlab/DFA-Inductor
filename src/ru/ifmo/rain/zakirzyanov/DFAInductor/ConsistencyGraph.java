@@ -104,14 +104,22 @@ public class ConsistencyGraph {
 	// node number < other number
 	private boolean testMerge(Node node, Node other) {
 		Triple nodeRep = merged.get(node.getNumber());
+		while (nodeRep != merged.get(nodeRep.num)) {
+			nodeRep = merged.get(nodeRep.num);
+		}
 		Triple otherRep = merged.get(other.getNumber());
+		while (otherRep != merged.get(otherRep.num)) {
+			otherRep = merged.get(otherRep.num);
+		}
 		if (nodeRep.isAcc != otherRep.isAcc && nodeRep.isRej != otherRep.isRej) {
 			return false;
 		}
 		Triple newRep = new Triple(Math.min(nodeRep.num, otherRep.num),
 				nodeRep.isAcc || otherRep.isAcc, 
 				nodeRep.isRej || otherRep.isRej);
+		merged.put(nodeRep.num, newRep);
 		merged.put(node.getNumber(), newRep);
+		merged.put(otherRep.num, newRep);
 		merged.put(other.getNumber(), newRep);
 		for (String label : node.getChildren().keySet()) {
 			if (other.getChildren().containsKey(label)) {
