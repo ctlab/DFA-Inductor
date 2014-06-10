@@ -78,7 +78,9 @@ public class DimacsFileGenerator {
 						if (y[i][j] == null) {
 							y[i][j] = new HashMap<>();
 						}
-						y[i][j].put(label, maxVar++);
+						if (!y[i][j].containsKey(label)) {
+							y[i][j].put(label, maxVar++);
+						}
 					}
 				}
 			}
