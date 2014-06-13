@@ -7,11 +7,16 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
 public class DimacsFileGenerator {
+
+	final static int WITHOUT_SB = 0;
+	final static int BFS_SB = 1;
+	final static int CLIQUE_SB = 2;
 
 	private APTA apta;
 	private ConsistencyGraph cg;
@@ -29,38 +34,37 @@ public class DimacsFileGenerator {
 	private String tmpFile = "tmp";
 	private String dimacsFile;
 	private int countClauses = 0;
-	private boolean useSB;
+	private int SB;
+	private Set<Integer> acceptableClique;
+	private Set<Integer> rejectableClique;
+	private int color = 1;
 
 	public DimacsFileGenerator(APTA apta, ConsistencyGraph cg, int colors,
-			boolean useSB) throws IOException {
-		init(apta, cg, colors, useSB, "dimacsFile.cnf");
+			int SB) throws IOException {
+		init(apta, cg, colors, SB, "dimacsFile.cnf");
 	}
 
 	public DimacsFileGenerator(APTA apta, ConsistencyGraph cg, int colors,
-			boolean useSB, String dimacsFile) throws IOException {
-		init(apta, cg, colors, useSB, dimacsFile);
+			int SB, String dimacsFile) throws IOException {
+		init(apta, cg, colors, SB, dimacsFile);
 	}
 
 	@SuppressWarnings("unchecked")
-	private void init(APTA apta, ConsistencyGraph cg, int colors,
-			boolean useSB, String dimacsFile) throws IOException {
+	private void init(APTA apta, ConsistencyGraph cg, int colors, int SB,
+			String dimacsFile) throws IOException {
 		this.apta = apta;
 		this.cg = cg;
 		this.colors = colors;
-		this.useSB = useSB;
+		this.SB = SB;
 		this.maxVar = 1;
 		this.vertices = apta.getSize();
 		this.dimacsFile = dimacsFile;
 		this.pwDF = new PrintWriter(dimacsFile);
 		this.alphabet = apta.getAlphabet();
+
 		this.x = new int[vertices][colors];
 		this.y = new HashMap[colors][colors];
 		this.z = new int[colors];
-		if (useSB) {
-			this.e = new int[colors][colors];
-			this.m = new HashMap[colors][colors];
-			this.p = new int[colors][colors];
-		}
 		for (int v = 0; v < vertices; v++) {
 			for (int i = 0; i < colors; i++) {
 				x[v][i] = maxVar++;
@@ -86,7 +90,10 @@ public class DimacsFileGenerator {
 			}
 		}
 
-		if (useSB) {
+		if (SB == BFS_SB) {
+			this.e = new int[colors][colors];
+			this.m = new HashMap[colors][colors];
+			this.p = new int[colors][colors];
 			for (int i = 0; i < colors; i++) {
 				for (int j = i + 1; j < colors; j++) {
 					e[i][j] = maxVar++;
@@ -108,6 +115,55 @@ public class DimacsFileGenerator {
 				}
 			}
 		}
+
+		if (SB == CLIQUE_SB) {
+			int maxDegree = 0;
+			int maxV = -1;
+			acceptableClique = new HashSet<>();
+			for (int candidate : apta.getAcceptableNodes()) {
+				int candidateDegree = cg.getEdges().get(candidate).size();
+				if (candidateDegree > maxDegree) {
+					maxDegree = candidateDegree;
+					maxV = candidate;
+				}
+			}
+			int last = maxV;
+			if (last != -1) {
+				acceptableClique.add(last);
+				int anotherOne = findNeighbourWithHighestDegree(
+						acceptableClique, last, true);
+				while (anotherOne != -1) {
+					acceptableClique.add(anotherOne);
+					last = anotherOne;
+					anotherOne = findNeighbourWithHighestDegree(
+							acceptableClique, last, true);
+				}
+			}
+
+			maxDegree = 0;
+			maxV = -1;
+			rejectableClique = new HashSet<>();
+			for (int candidate : apta.getRejectableNodes()) {
+				int candidateDegree = cg.getEdges().get(candidate).size();
+				if (candidateDegree > maxDegree) {
+					maxDegree = candidateDegree;
+					maxV = candidate;
+				}
+			}
+			last = maxV;
+			if (last != -1) {
+				rejectableClique.add(last);
+				int anotherOne = findNeighbourWithHighestDegree(
+						rejectableClique, last, false);
+				while (anotherOne != -1) {
+					rejectableClique.add(anotherOne);
+					last = anotherOne;
+					anotherOne = findNeighbourWithHighestDegree(
+							rejectableClique, last, false);
+				}
+			}
+
+		}
 	}
 
 	public String generateFile() throws IOException {
@@ -116,6 +172,10 @@ public class DimacsFileGenerator {
 		PrintWriter tmpPW = new PrintWriter(tmp);
 		Buffer buffer = new Buffer(tmpPW);
 
+		if (SB == CLIQUE_SB) {
+			printAcceptableCliqueSB(buffer);
+			printRejectableCliqueSB(buffer);
+		}
 		printOneAtLeast(buffer);
 		printAccVertDiffColorRej(buffer);
 		printParrentRelationIsSet(buffer);
@@ -124,7 +184,7 @@ public class DimacsFileGenerator {
 		printParrentRelationAtLeastOneColor(buffer);
 		printParrentRelationForces(buffer);
 		printConflictsFromCG(buffer);
-		if (useSB) {
+		if (SB == BFS_SB) {
 			printSBPEdgeExist(buffer);
 			printSBPMinimalSymbol(buffer);
 			printSBPParent(buffer);
@@ -133,6 +193,7 @@ public class DimacsFileGenerator {
 			printSBPOrderInLayer(buffer);
 			printSBPParentExist(buffer);
 		}
+		
 		tmpPW.close();
 		countClauses = buffer.nClauses();
 
@@ -152,6 +213,39 @@ public class DimacsFileGenerator {
 		tmp.delete();
 
 		return dimacsFile;
+	}
+
+	private int findNeighbourWithHighestDegree(Set<Integer> cur, int v,
+			boolean acceptable) {
+		int maxDegree = 0;
+		int maxNeighbour = -1;
+		// uv - edge
+		for (int u : cg.getEdges().get(v)) {
+			if (acceptable && !apta.isAcceptable(u)) {
+				continue;
+			}
+			if (!acceptable && !apta.isRejectable(u)) {
+				continue;
+			}
+			boolean uInClique = true;
+			// check if other edges in cur connected with u
+			for (int w : cur) {
+				if (w != v) {
+					if (!cg.getEdges().get(w).contains(u)) {
+						uInClique = false;
+						break;
+					}
+				}
+			}
+			if (uInClique) {
+				int uDegree = cg.getEdges().get(u).size();
+				if (uDegree > maxDegree) {
+					maxDegree = uDegree;
+					maxNeighbour = u;
+				}
+			}
+		}
+		return maxNeighbour;
 	}
 
 	// Each vertex has at least one color.
@@ -395,6 +489,38 @@ public class DimacsFileGenerator {
 				tmp.append(p[i][j] + " ");
 			}
 			buffer.addClause(tmp);
+		}
+		buffer.flush();
+	}
+
+	private void printAcceptableCliqueSB(Buffer buffer) {
+		for (int i : acceptableClique) {
+			if (i == 0) {
+				continue;
+			}
+			if (color < colors) {
+				buffer.addClause(x[i][color]);
+				buffer.addClause(z[color]);
+				color++;
+			} else {
+				break;
+			}
+		}
+		buffer.flush();
+	}
+
+	private void printRejectableCliqueSB(Buffer buffer) {
+		for (int i : rejectableClique) {
+			if (i == 0) {
+				continue;
+			}
+			if (color < colors) {
+				buffer.addClause(x[i][color]);
+				buffer.addClause(-z[color]);
+				color++;
+			} else {
+				break;
+			}
 		}
 		buffer.flush();
 	}
