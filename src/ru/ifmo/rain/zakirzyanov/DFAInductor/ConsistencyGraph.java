@@ -12,6 +12,12 @@ public class ConsistencyGraph {
 	Map<Integer, Triple> merged = new HashMap<>();
 	Map<Integer, Triple> mergedInit = new HashMap<>();
 
+	//empty cg
+	public ConsistencyGraph() {
+		this.apta = new APTA();
+		this.edges = new HashMap<>();
+	}
+	
 	public ConsistencyGraph(APTA apta) {
 		edges = new HashMap<>();
 		this.apta = apta;

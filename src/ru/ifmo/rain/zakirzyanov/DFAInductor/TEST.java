@@ -64,7 +64,7 @@ public class TEST {
 						MAX_COLOR);
 				System.out.println(colors4);
 				assert (colors == colors4);
-				APTA apta = new APTA(new FileInputStream(child));
+				APTA apta = new APTA(new FileInputStream(child), APTA.IS_NOT_NOISY);
 				pw.println("apta size = " + apta.getSize() + ", words count = "
 						+ apta.getCountOfWords());
 				pw.print(horLine);
@@ -79,7 +79,7 @@ public class TEST {
 	public int test(File file, int SB, int maxColor) throws IOException,
 			ParseFormatException {
 		InputStream is = new FileInputStream(file);
-		APTA apta = new APTA(is);
+		APTA apta = new APTA(is, APTA.IS_NOT_NOISY);
 		ConsistencyGraph cg = new ConsistencyGraph(apta);
 		int colors;
 		for (colors = 1; colors <= maxColor; colors++) {

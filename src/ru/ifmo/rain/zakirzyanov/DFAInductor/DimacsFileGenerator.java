@@ -31,36 +31,55 @@ public class DimacsFileGenerator {
 	private int[][] e;
 	private Map<String, Integer>[][] m;
 	private int[][] p;
+	private int[][] n;
+	private int[] f;
 	private String tmpFile = "tmp";
 	private String dimacsFile;
 	private int countClauses = 0;
 	private int SB;
+	private int noisyP;
+	private int noisySize;
 	private Set<Integer> acceptableClique;
 	private Set<Integer> rejectableClique;
 	private int color = 0;
+	private Set<Integer> ends;
 
 	public DimacsFileGenerator(APTA apta, ConsistencyGraph cg, int colors,
 			int SB) throws IOException {
-		init(apta, cg, colors, SB, "dimacsFile.cnf");
+		init(apta, cg, colors, SB, 0, "dimacsFile.cnf");
+	}
+
+	public DimacsFileGenerator(APTA apta, ConsistencyGraph cg, int colors,
+			int SB, int noisyP) throws IOException {
+		init(apta, cg, colors, SB, noisyP, "dimacsFile.cnf");
 	}
 
 	public DimacsFileGenerator(APTA apta, ConsistencyGraph cg, int colors,
 			int SB, String dimacsFile) throws IOException {
-		init(apta, cg, colors, SB, dimacsFile);
+		init(apta, cg, colors, SB, 0, dimacsFile);
+	}
+
+	public DimacsFileGenerator(APTA apta, ConsistencyGraph cg, int colors,
+			int SB, int noisyP, String dimacsFile) throws IOException {
+		init(apta, cg, colors, SB, noisyP, dimacsFile);
 	}
 
 	@SuppressWarnings("unchecked")
 	private void init(APTA apta, ConsistencyGraph cg, int colors, int SB,
-			String dimacsFile) throws IOException {
+			int noisyP, String dimacsFile) throws IOException {
 		this.apta = apta;
 		this.cg = cg;
 		this.colors = colors;
 		this.SB = SB;
+		this.noisyP = noisyP;
 		this.maxVar = 1;
 		this.vertices = apta.getSize();
 		this.dimacsFile = dimacsFile;
 		this.pwDF = new PrintWriter(dimacsFile);
 		this.alphabet = apta.getAlphabet();
+		this.ends = new HashSet<>();
+		ends.addAll(apta.getAcceptableNodes());
+		ends.addAll(apta.getRejectableNodes());
 
 		this.x = new int[vertices][colors];
 		this.y = new HashMap[colors][colors];
@@ -155,7 +174,22 @@ public class DimacsFileGenerator {
 							rejectableClique, last, false);
 				}
 			}
+		}
 
+		if (noisyP > 0) {
+			noisySize = ends.size() * this.noisyP / 100;
+			n = new int[noisySize][vertices];
+			f = new int[vertices];
+
+			for (int i = 0; i < noisySize; i++) {
+				for (int j = 0; j < vertices; j++) {
+					n[i][j] = maxVar++;
+				}
+			}
+
+			for (int i = 0; i < vertices; i++) {
+				f[i] = maxVar++;
+			}
 		}
 	}
 
@@ -165,20 +199,15 @@ public class DimacsFileGenerator {
 		PrintWriter tmpPW = new PrintWriter(tmp);
 		Buffer buffer = new Buffer(tmpPW);
 
-		if (SB == CLIQUE_SB) {
-			printAcceptableCliqueSB(buffer);
-			printRejectableCliqueSB(buffer);
-		}
 		printOneAtLeast(buffer);
 		printAccVertDiffColorRej(buffer);
 		printParrentRelationIsSet(buffer);
 		printParrentRelationAtMostOneColor(buffer);
-		printOneAtMost(buffer);
 		printParrentRelationAtLeastOneColor(buffer);
 		printParrentRelationForces(buffer);
-		printConflictsFromCG(buffer);
+
 		if (SB == BFS_SB) {
-			//root has 0 color
+			// root has 0 color
 			buffer.addClause(x[0][0]);
 			printSBPEdgeExist(buffer);
 			printSBPMinimalSymbol(buffer);
@@ -188,7 +217,22 @@ public class DimacsFileGenerator {
 			printSBPOrderInLayer(buffer);
 			printSBPParentExist(buffer);
 		}
+		if (SB == CLIQUE_SB) {
+			printAcceptableCliqueSB(buffer);
+			printRejectableCliqueSB(buffer);
+		}
 
+		if (noisyP > 0) {
+			printOneAtLeastInNoisy(buffer);
+			printOneAtMostInNoisy(buffer);
+			printNoisyOrdered(buffer);
+			printFProxy(buffer);
+			printOneAtMostNoisy(buffer);
+
+		} else {
+			printOneAtMost(buffer);
+			printConflictsFromCG(buffer);
+		}
 		tmpPW.close();
 		countClauses = buffer.nClauses();
 
@@ -506,6 +550,84 @@ public class DimacsFileGenerator {
 				color++;
 			} else {
 				break;
+			}
+		}
+		buffer.flush();
+	}
+
+	// n_{q,1} \/ n_{q,2} \/ ... \/ n_{q,|V|}
+	private void printOneAtLeastInNoisy(Buffer buffer) {
+		for (int q = 0; q < noisySize; q++) {
+			StringBuilder sb = new StringBuilder();
+			for (int i = 0; i < vertices; i++) {
+				if (ends.contains(i)) {
+					sb.append(n[q][i] + " ");
+				}
+			}
+			buffer.addClause(sb);
+		}
+		buffer.flush();
+	}
+
+	// ~n[q,i] \/ ~n[q,j]
+	private void printOneAtMostInNoisy(Buffer buffer) {
+		for (int q = 0; q < noisySize; q++) {
+			for (int i = 0; i < vertices; i++) {
+				if (ends.contains(i)) {
+					for (int j = i + 1; j < vertices; j++) {
+						if (ends.contains(i)) {
+							buffer.addClause(-n[q][i], -n[q][j]);
+						}
+					}
+				}
+			}
+		}
+		buffer.flush();
+	}
+
+	// n_{q,i} => ~n_{q+1,i-j}
+	private void printNoisyOrdered(Buffer buffer) {
+		for (int q = 0; q < noisySize - 1; q++) {
+			for (int i = 0; i < vertices; i++) {
+				if (ends.contains(i)) {
+					for (int j = 0; j < i; j++) {
+						if (ends.contains(j)) {
+							buffer.addClause(-n[q][i], -n[q + 1][j]);
+						}
+					}
+				}
+			}
+		}
+		buffer.flush();
+	}
+
+	// f_v <=> n_{1,v} \/ ... \/ n_{k, v}.
+	private void printFProxy(Buffer buffer) {
+		for (int v = 0; v < vertices; v++) {
+			if (ends.contains(v)) {
+				int fv = f[v];
+				StringBuilder tmp = new StringBuilder(-fv + " ");
+				for (int q = 0; q < noisySize; q++) {
+					buffer.addClause(fv, -n[q][v]);
+					tmp.append(n[q][v] + " ");
+				}
+				buffer.addClause(tmp);
+			}
+		}
+		buffer.flush();
+	}
+
+	// (f_v \/ ~x_{v,i} \/ z_i) /\ (f_w \/~x_{w,i} \/ ~z_i)
+	private void printOneAtMostNoisy(Buffer buffer) {
+		for (int v = 0; v < vertices; v++) {
+			for (int i = 0; i < colors; i++) {
+				for (int j = i + 1; j < colors; j++) {
+					if (ends.contains(v)) {
+						buffer.addClause(f[v], -x[v][i], -x[v][j]);
+					} else {
+						buffer.addClause(-x[v][i], -x[v][j]);
+					}
+				}
 			}
 		}
 		buffer.flush();

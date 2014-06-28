@@ -11,6 +11,10 @@ import java.util.Set;
 import java.util.StringTokenizer;
 
 public class APTA {
+	
+	public static final boolean IS_NOISY = true;
+	public static final boolean IS_NOT_NOISY = false;
+	
 
 	private Node root;
 	private int size;
@@ -21,6 +25,8 @@ public class APTA {
 	private Set<Integer> acceptableNodes;
 	private Set<Integer> rejectableNodes;
 	private Map<Integer, Node> indexesOfNodes;
+	private boolean isNoisy;
+	private int colors;
 
 	StringTokenizer st;
 	BufferedReader br;
@@ -35,17 +41,21 @@ public class APTA {
 		indexesOfNodes.put(size++, root);
 	}
 
-	public APTA(InputStream is) throws IOException {
+	public APTA(InputStream is, boolean isNoisy) throws IOException {
 		br = new BufferedReader(new InputStreamReader(is));
 		size = 0;
 		acceptableNodes = new HashSet<>();
 		rejectableNodes = new HashSet<>();
 		indexesOfNodes = new HashMap<>();
 		alphabet = new HashSet<>();
+		this.isNoisy = isNoisy;
 
 		int lines = nextInt();
 		words = lines;
 		int alphaSize = nextInt();
+		if (isNoisy) {
+			colors = nextInt();
+		}
 		this.alphaSize = alphaSize;
 		root = new Node(size);
 		indexesOfNodes.put(size++, root);
@@ -122,6 +132,18 @@ public class APTA {
 	public Node getNode(int i) {
 		Node node = indexesOfNodes.get(i);
 		return node;
+	}
+	
+	public boolean isNoisy() {
+		return isNoisy;
+	}
+	
+	public int getColors() {
+		if (isNoisy) {
+			return colors;
+		} else {
+			return -1;
+		}
 	}
 
 	private String nextToken() throws IOException {

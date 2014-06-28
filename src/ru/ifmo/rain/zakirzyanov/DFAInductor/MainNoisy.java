@@ -9,50 +9,47 @@ import org.sat4j.reader.ParseFormatException;
 import org.sat4j.specs.ContradictionException;
 import org.sat4j.specs.TimeoutException;
 
-public class Main {
-
-	private static final String[] test = { "0_training.txt.dat",
-			"01_training.txt.dat", "1_training.txt.dat", "10_training.txt.dat",
-			"50_training.txt.dat", "randm20.02.02.06.020_0030.01.aba" };
-	private static final int MAX_COLORS = 30;
+public class MainNoisy {
+	private static final String[] test = { "train-10-0.txt" };
+	private static final int MAX_PERCENT = 30;
 	private static final String resultFilePath = "ans.dot";
-	
+
 	public static void main(String[] args) throws IOException,
 			ContradictionException, TimeoutException, ParseFormatException {
-		InputStream is = new FileInputStream(test[5]);
-		APTA apta = new APTA(is, APTA.IS_NOT_NOISY);
-		ConsistencyGraph cg = new ConsistencyGraph(apta);
+		InputStream is = new FileInputStream(test[0]);
+		APTA apta = new APTA(is, APTA.IS_NOISY);
+		ConsistencyGraph cg = new ConsistencyGraph();
 
-		for (int colors = 1; colors <= MAX_COLORS; colors++) {
+		for (int percent = 10; percent <= MAX_PERCENT; percent++) {
 			System.out.println("======");
-			System.out.println("colors: " + colors);
+			System.out.println("percent: " + percent);
+			int colors = apta.getColors();
 			try {
 				String dimacsFile = new DimacsFileGenerator(apta, cg, colors,
-						DimacsFileGenerator.CLIQUE_SB).generateFile();
-				SATSolver solver = new SATSolver(apta, cg, colors, dimacsFile, 300, "lingeling.exe");
+						DimacsFileGenerator.BFS_SB, percent).generateFile();
+				SATSolver solver = new SATSolver(apta, cg, colors, dimacsFile,
+						900, "lingeling.exe");
 				System.out.println("Vars: " + solver.nVars());
 				System.out.println("Constraints: " + solver.nConstraints());
 				if (solver.problemIsSatisfiable()) {
-					System.out.println("The automat with " + colors
-							+ " colors was found.");
+					System.out.println("The automat with " + percent
+							+ "% mistakes was found.");
 					Automat automat = solver.getModel();
 					PrintWriter pw = new PrintWriter(resultFilePath);
 					pw.print(automat + "\n");
 					pw.close();
 					break;
 				} else {
-					System.out.println("The automat with " + colors
-							+ " colors not found.");
+					System.out.println("The automat with " + percent
+							+ "% mistakes not found.");
 				}
 			} catch (ContradictionException e) {
-				System.out.println("The automat with " + colors
-						+ " colors not found.");
+				System.out.println("The automat with " + percent
+						+ "% mistakes not found.");
 			} catch (TimeoutException e) {
 				System.out.println("timeot reached");
 				break;
 			}
 		}
-//		TEST test = new TEST("table");
-//		test.test();
 	}
 }
