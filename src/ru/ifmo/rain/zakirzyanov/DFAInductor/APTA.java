@@ -4,11 +4,8 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.StringTokenizer;
@@ -17,6 +14,7 @@ public class APTA {
 
 	private Node root;
 	private int size;
+	private int words;
 	@SuppressWarnings("unused")
 	private int alphaSize;
 	private Set<String> alphabet;
@@ -46,6 +44,7 @@ public class APTA {
 		alphabet = new HashSet<>();
 
 		int lines = nextInt();
+		words = lines;
 		int alphaSize = nextInt();
 		this.alphaSize = alphaSize;
 		root = new Node(size);
@@ -54,7 +53,6 @@ public class APTA {
 		Node currentNode;
 		Node newNode;
 		String label;
-
 		for (int line = 0; line < lines; line++) {
 			currentNode = root;
 			int status = nextInt();
@@ -94,6 +92,10 @@ public class APTA {
 
 	public int getSize() {
 		return size;
+	}
+	
+	public int getCountOfWords() {
+		return words;
 	}
 
 	public int getAlphaSize() {
