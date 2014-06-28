@@ -90,10 +90,9 @@ public class SATSolver {
 		if (satSolverFile == null) {
 			return problem.isSatisfiable();
 		} else {
-			// Process process = new ProcessBuilder(satSolverFile + " " +
-			// DimacsFile).start();
-			Process process = Runtime.getRuntime().exec(
-					satSolverFile + timeoutString + dimacsFile);
+			Process process = new ProcessBuilder((satSolverFile + timeoutString + dimacsFile).split(" ")).start();
+//			Process process = Runtime.getRuntime().exec(
+//					satSolverFile + timeoutString + dimacsFile);
 			BufferedReader br = new BufferedReader(new InputStreamReader(
 					process.getInputStream()));
 			String line;
