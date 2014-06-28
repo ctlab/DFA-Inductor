@@ -13,48 +13,46 @@ public class Main {
 
 	private static final String[] test = { "0_training.txt.dat",
 			"01_training.txt.dat", "1_training.txt.dat", "10_training.txt.dat",
-			"50_training.txt.dat", "randm04.02.02.05.020_0030.01.aba" };
+			"50_training.txt.dat", "randm20.02.02.06.020_0030.01.aba" };
 	private static final int MAX_COLORS = 30;
 	private static final String resultFilePath = "ans.dot";
-	private static final boolean USE_SB = true;
-	private static final boolean DONT_USE_SB = false;
-
+	
 	public static void main(String[] args) throws IOException,
 			ContradictionException, TimeoutException, ParseFormatException {
-		InputStream is = new FileInputStream(test[5]);
-		APTA apta = new APTA(is);
-		ConsistencyGraph cg = new ConsistencyGraph(apta);
-
-		for (int colors = 1; colors <= MAX_COLORS; colors++) {
-			System.out.println("======");
-			System.out.println("colors: " + colors);
-			try {
-				String dimacsFile = new DimacsFileGenerator(apta, cg, colors,
-						USE_SB).generateFile();
-				SATSolver solver = new SATSolver(apta, cg, colors, dimacsFile, 300, "lingeling.exe");
-				System.out.println("Vars: " + solver.nVars());
-				System.out.println("Constraints: " + solver.nConstraints());
-				if (solver.problemIsSatisfiable()) {
-					System.out.println("The automat with " + colors
-							+ " colors was found.");
-					Automat automat = solver.getModel();
-					PrintWriter pw = new PrintWriter(resultFilePath);
-					pw.print(automat + "\n");
-					pw.close();
-					break;
-				} else {
-					System.out.println("The automat with " + colors
-							+ " colors not found.");
-				}
-			} catch (ContradictionException e) {
-				System.out.println("The automat with " + colors
-						+ " colors not found.");
-			} catch (TimeoutException e) {
-				System.out.println("timeot reached");
-				break;
-			}
-		}
-//		TEST test = new TEST("table");
-//		test.test();
+//		InputStream is = new FileInputStream(test[5]);
+//		APTA apta = new APTA(is);
+//		ConsistencyGraph cg = new ConsistencyGraph(apta);
+//
+//		for (int colors = 1; colors <= MAX_COLORS; colors++) {
+//			System.out.println("======");
+//			System.out.println("colors: " + colors);
+//			try {
+//				String dimacsFile = new DimacsFileGenerator(apta, cg, colors,
+//						DimacsFileGenerator.BFS_SB).generateFile();
+//				SATSolver solver = new SATSolver(apta, cg, colors, dimacsFile, 300, "lingeling.exe");
+//				System.out.println("Vars: " + solver.nVars());
+//				System.out.println("Constraints: " + solver.nConstraints());
+//				if (solver.problemIsSatisfiable()) {
+//					System.out.println("The automat with " + colors
+//							+ " colors was found.");
+//					Automat automat = solver.getModel();
+//					PrintWriter pw = new PrintWriter(resultFilePath);
+//					pw.print(automat + "\n");
+//					pw.close();
+//					break;
+//				} else {
+//					System.out.println("The automat with " + colors
+//							+ " colors not found.");
+//				}
+//			} catch (ContradictionException e) {
+//				System.out.println("The automat with " + colors
+//						+ " colors not found.");
+//			} catch (TimeoutException e) {
+//				System.out.println("timeot reached");
+//				break;
+//			}
+//		}
+		TEST test = new TEST("table");
+		test.test();
 	}
 }
