@@ -37,7 +37,7 @@ public class DimacsFileGenerator {
 	private int SB;
 	private Set<Integer> acceptableClique;
 	private Set<Integer> rejectableClique;
-	private int color = 1;
+	private int color = 0;
 
 	public DimacsFileGenerator(APTA apta, ConsistencyGraph cg, int colors,
 			int SB) throws IOException {
@@ -73,19 +73,12 @@ public class DimacsFileGenerator {
 		for (int i = 0; i < colors; i++) {
 			z[i] = maxVar++;
 		}
-		for (int v = 0; v < vertices; v++) {
-			for (int i = 0; i < colors; i++) {
-				for (int j = 0; j < colors; j++) {
-					Node cur = apta.getNode(v);
-					for (Entry<String, Node> e : cur.getParents().entrySet()) {
-						String label = e.getKey();
-						if (y[i][j] == null) {
-							y[i][j] = new HashMap<>();
-						}
-						if (!y[i][j].containsKey(label)) {
-							y[i][j].put(label, maxVar++);
-						}
-					}
+
+		for (int i = 0; i < colors; i++) {
+			for (int j = 0; j < colors; j++) {
+				y[i][j] = new HashMap<>();
+				for (String label : alphabet) {
+					y[i][j].put(label, maxVar++);
 				}
 			}
 		}
@@ -185,6 +178,8 @@ public class DimacsFileGenerator {
 		printParrentRelationForces(buffer);
 		printConflictsFromCG(buffer);
 		if (SB == BFS_SB) {
+			//root has 0 color
+			buffer.addClause(x[0][0]);
 			printSBPEdgeExist(buffer);
 			printSBPMinimalSymbol(buffer);
 			printSBPParent(buffer);
@@ -193,7 +188,7 @@ public class DimacsFileGenerator {
 			printSBPOrderInLayer(buffer);
 			printSBPParentExist(buffer);
 		}
-		
+
 		tmpPW.close();
 		countClauses = buffer.nClauses();
 
@@ -258,9 +253,6 @@ public class DimacsFileGenerator {
 			}
 			buffer.addClause(sb);
 		}
-
-		// root has 0 color
-		buffer.addClause(x[0][0]);
 		buffer.flush();
 	}
 
@@ -495,9 +487,6 @@ public class DimacsFileGenerator {
 
 	private void printAcceptableCliqueSB(Buffer buffer) {
 		for (int i : acceptableClique) {
-			if (i == 0) {
-				continue;
-			}
 			if (color < colors) {
 				buffer.addClause(x[i][color]);
 				buffer.addClause(z[color]);
@@ -511,9 +500,6 @@ public class DimacsFileGenerator {
 
 	private void printRejectableCliqueSB(Buffer buffer) {
 		for (int i : rejectableClique) {
-			if (i == 0) {
-				continue;
-			}
 			if (color < colors) {
 				buffer.addClause(x[i][color]);
 				buffer.addClause(-z[color]);
