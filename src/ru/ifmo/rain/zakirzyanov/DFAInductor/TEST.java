@@ -44,26 +44,26 @@ public class TEST {
 
 				pw.println(tests);
 
-				pw.print("HOLLAND|");
-				int colors = hollandTest(child, MAX_COLOR);
-				System.out.print(colors + " ");
-
+//				pw.print("HOLLAND|");
+//				int colors = hollandTest(child, MAX_COLOR);
+//				System.out.print(colors + " ");
+//
 				pw.print("CLIQUE |");
 				int colors2 = test(child, DimacsFileGenerator.CLIQUE_SB,
 						MAX_COLOR);
 				System.out.print(colors2 + " ");
-				assert (colors == colors2);
+//				assert (colors == colors2);
 
 				pw.print("BFS    |");
 				int colors3 = test(child, DimacsFileGenerator.BFS_SB, MAX_COLOR);
 				System.out.print(colors3 + " ");
-				assert (colors == colors3);
+				assert (colors2 == colors3);
 
 				pw.print("WoSB   |");
 				int colors4 = test(child, DimacsFileGenerator.WITHOUT_SB,
 						MAX_COLOR);
 				System.out.println(colors4);
-				assert (colors == colors4);
+				assert (colors2 == colors4);
 				APTA apta = new APTA(new FileInputStream(child), APTA.IS_NOT_NOISY);
 				pw.println("apta size = " + apta.getSize() + ", words count = "
 						+ apta.getCountOfWords());

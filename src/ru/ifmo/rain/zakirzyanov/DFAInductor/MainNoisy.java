@@ -10,7 +10,7 @@ import org.sat4j.specs.ContradictionException;
 import org.sat4j.specs.TimeoutException;
 
 public class MainNoisy {
-	private static final String[] test = { "train-10-0.txt" };
+	private static final String[] test = { "0_training.txt.dat", "train-10-0.txt" };
 	private static final int MAX_PERCENT = 30;
 	private static final String resultFilePath = "ans.dot";
 

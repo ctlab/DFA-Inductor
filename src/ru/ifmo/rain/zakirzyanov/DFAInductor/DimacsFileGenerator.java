@@ -78,9 +78,7 @@ public class DimacsFileGenerator {
 		this.pwDF = new PrintWriter(dimacsFile);
 		this.alphabet = apta.getAlphabet();
 		this.ends = new HashSet<>();
-		ends.addAll(apta.getAcceptableNodes());
-		ends.addAll(apta.getRejectableNodes());
-
+	
 		this.x = new int[vertices][colors];
 		this.y = new HashMap[colors][colors];
 		this.z = new int[colors];
@@ -177,6 +175,9 @@ public class DimacsFileGenerator {
 		}
 
 		if (noisyP > 0) {
+			ends.addAll(apta.getAcceptableNodes());
+			ends.addAll(apta.getRejectableNodes());
+			
 			noisySize = ends.size() * this.noisyP / 100;
 			n = new int[noisySize][vertices];
 			f = new int[vertices];
@@ -200,7 +201,7 @@ public class DimacsFileGenerator {
 		Buffer buffer = new Buffer(tmpPW);
 
 		printOneAtLeast(buffer);
-		printAccVertDiffColorRej(buffer);
+		printOneAtMost(buffer);
 		printParrentRelationIsSet(buffer);
 		printParrentRelationAtMostOneColor(buffer);
 		printParrentRelationAtLeastOneColor(buffer);
@@ -212,7 +213,7 @@ public class DimacsFileGenerator {
 			printSBPEdgeExist(buffer);
 			printSBPMinimalSymbol(buffer);
 			printSBPParent(buffer);
-			printSBPChildrenOrder(buffer);
+		//	printSBPChildrenOrder(buffer);
 			printSBPOrderByChildrenSymbol(buffer);
 			printSBPOrderInLayer(buffer);
 			printSBPParentExist(buffer);
@@ -227,10 +228,10 @@ public class DimacsFileGenerator {
 			printOneAtMostInNoisy(buffer);
 			printNoisyOrdered(buffer);
 			printFProxy(buffer);
-			printOneAtMostNoisy(buffer);
-
+			printAccVertDiffColorRejNoisy(buffer);
+			
 		} else {
-			printOneAtMost(buffer);
+			printAccVertDiffColorRej(buffer);
 			printConflictsFromCG(buffer);
 		}
 		tmpPW.close();
@@ -618,15 +619,20 @@ public class DimacsFileGenerator {
 	}
 
 	// (f_v \/ ~x_{v,i} \/ z_i) /\ (f_w \/~x_{w,i} \/ ~z_i)
-	private void printOneAtMostNoisy(Buffer buffer) {
-		for (int v = 0; v < vertices; v++) {
-			for (int i = 0; i < colors; i++) {
-				for (int j = i + 1; j < colors; j++) {
-					if (ends.contains(v)) {
-						buffer.addClause(f[v], -x[v][i], -x[v][j]);
-					} else {
-						buffer.addClause(-x[v][i], -x[v][j]);
-					}
+	private void printAccVertDiffColorRejNoisy(Buffer buffer) {
+		for (int i = 0; i < colors; i++) {
+			for (Integer acc : apta.getAcceptableNodes()) {
+				if (ends.contains(acc)) {
+					buffer.addClause(f[acc], -x[acc][i], z[i]);
+				} else {
+					buffer.addClause(-x[acc][i], z[i]);
+				}
+			}
+			for (Integer rej : apta.getRejectableNodes()) {
+				if (ends.contains(rej)) {
+					buffer.addClause(f[rej], -x[rej][i], -z[i]);
+				} else {
+					buffer.addClause(-x[rej][i], -z[i]);
 				}
 			}
 		}
