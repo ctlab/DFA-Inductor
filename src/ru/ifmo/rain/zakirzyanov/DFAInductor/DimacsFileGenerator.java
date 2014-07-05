@@ -102,7 +102,6 @@ public class DimacsFileGenerator {
 
 		if (SB == BFS_SB) {
 			this.e = new int[colors][colors];
-			this.m = new HashMap[colors][colors];
 			this.p = new int[colors][colors];
 			for (int i = 0; i < colors; i++) {
 				for (int j = i + 1; j < colors; j++) {
@@ -110,18 +109,20 @@ public class DimacsFileGenerator {
 				}
 			}
 
-			for (int i = 0; i < colors; i++) {
-				for (int j = i + 1; j < colors; j++) {
-					m[i][j] = new HashMap<>();
-					for (String label : alphabet) {
-						m[i][j].put(label, maxVar++);
-					}
-				}
-			}
-
 			for (int i = 1; i < colors; i++) {
 				for (int j = 0; j < i; j++) {
 					p[i][j] = maxVar++;
+				}
+			}
+			if (apta.getAlphaSize() != 2) {
+				this.m = new HashMap[colors][colors];
+				for (int i = 0; i < colors; i++) {
+					for (int j = i + 1; j < colors; j++) {
+						m[i][j] = new HashMap<>();
+						for (String label : alphabet) {
+							m[i][j].put(label, maxVar++);
+						}
+					}
 				}
 			}
 		}
@@ -214,7 +215,11 @@ public class DimacsFileGenerator {
 			printSBPMinimalSymbol(buffer);
 			printSBPParent(buffer);
 		//	printSBPChildrenOrder(buffer);
-			printSBPOrderByChildrenSymbol(buffer);
+			if (apta.getAlphaSize() == 2) {
+				printSBPOrderByChildrenSymbolForSizeTwo(buffer);
+			} else {
+				printSBPOrderByChildrenSymbol(buffer);
+			}
 			printSBPOrderInLayer(buffer);
 			printSBPParentExist(buffer);
 		}
@@ -487,6 +492,7 @@ public class DimacsFileGenerator {
 		buffer.flush();
 	}
 
+	// if alphabet size greater then 2
 	// p_{i,j} and p_{i+1,j} and m_{j,i,c_k} => !m_{j,i+1,c_(k-q)}
 	private void printSBPOrderByChildrenSymbol(Buffer buffer) {
 		for (int i = 1; i < colors - 1; i++) {
@@ -506,6 +512,19 @@ public class DimacsFileGenerator {
 		buffer.flush();
 	}
 
+	// if alphabet size equal to 2
+	// p_{i,j} and p_{i+1,j} => y_{j, i, 0} and y_{j, i + 1, 1} 
+	private void printSBPOrderByChildrenSymbolForSizeTwo(Buffer buffer) {
+		for (int i = 1; i < colors - 1; i++) {
+			for (int j = 0; j < i; j++) {
+				buffer.addClause(-p[i][j], -p[i + 1][j], y[j][i].get(0));
+				buffer.addClause(-p[i][j], -p[i + 1][j], y[j][i + 1].get(1));
+			}
+		}
+		buffer.flush();
+	}
+
+	
 	// p_{i,j} => !p_{i+1,j-q}
 	private void printSBPOrderInLayer(Buffer buffer) {
 		for (int i = 1; i < colors - 1; i++) {
@@ -576,7 +595,7 @@ public class DimacsFileGenerator {
 			for (int i = 0; i < vertices; i++) {
 				if (ends.contains(i)) {
 					for (int j = i + 1; j < vertices; j++) {
-						if (ends.contains(i)) {
+						if (ends.contains(j)) {
 							buffer.addClause(-n[q][i], -n[q][j]);
 						}
 					}
@@ -622,18 +641,10 @@ public class DimacsFileGenerator {
 	private void printAccVertDiffColorRejNoisy(Buffer buffer) {
 		for (int i = 0; i < colors; i++) {
 			for (Integer acc : apta.getAcceptableNodes()) {
-				if (ends.contains(acc)) {
-					buffer.addClause(f[acc], -x[acc][i], z[i]);
-				} else {
-					buffer.addClause(-x[acc][i], z[i]);
-				}
+				buffer.addClause(f[acc], -x[acc][i], z[i]);
 			}
 			for (Integer rej : apta.getRejectableNodes()) {
-				if (ends.contains(rej)) {
-					buffer.addClause(f[rej], -x[rej][i], -z[i]);
-				} else {
-					buffer.addClause(-x[rej][i], -z[i]);
-				}
+				buffer.addClause(-x[rej][i], -z[i]);
 			}
 		}
 		buffer.flush();
