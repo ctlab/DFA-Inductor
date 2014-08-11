@@ -644,7 +644,7 @@ public class DimacsFileGenerator {
 				buffer.addClause(f[acc], -x[acc][i], z[i]);
 			}
 			for (Integer rej : apta.getRejectableNodes()) {
-				buffer.addClause(-x[rej][i], -z[i]);
+				buffer.addClause(f[rej], -x[rej][i], -z[i]);
 			}
 		}
 		buffer.flush();
