@@ -1,6 +1,5 @@
 package ru.ifmo.rain.zakirzyanov.DFAInductor;
 
-import java.io.IOException;
 import java.io.PrintWriter;
 
 public class Buffer {
@@ -8,7 +7,7 @@ public class Buffer {
 	private PrintWriter pw;
 	private int countClauses;
 	
-	public Buffer(PrintWriter pw) throws IOException {
+	public Buffer(PrintWriter pw) {
 		this.pw = pw;
 		this.sb = new StringBuilder();
 		this.countClauses = 0;

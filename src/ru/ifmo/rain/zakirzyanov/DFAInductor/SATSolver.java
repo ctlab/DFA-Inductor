@@ -30,36 +30,38 @@ public class SATSolver {
 	private int countClauses;
 	private int countVars;
 
-	public SATSolver(APTA apta, ConsistencyGraph cg, int colors, String dimacsFile)
-			throws ContradictionException, ParseFormatException, IOException {
+	public SATSolver(APTA apta, ConsistencyGraph cg, int colors,
+			String dimacsFile) throws ContradictionException,
+			ParseFormatException, IOException {
 		init(apta, cg, colors, dimacsFile, null);
 		problem = build(0);
 	}
-	
-	public SATSolver(APTA apta, ConsistencyGraph cg, int colors, String dimacsFile, int timeout)
-			throws ContradictionException, ParseFormatException, IOException {
+
+	public SATSolver(APTA apta, ConsistencyGraph cg, int colors,
+			String dimacsFile, int timeout) throws ContradictionException,
+			ParseFormatException, IOException {
 		init(apta, cg, colors, dimacsFile, null);
 		problem = build(timeout);
 	}
 
-	public SATSolver(APTA apta, ConsistencyGraph cg, int colors, String dimacsFile,
-			String satSolverFile) throws ContradictionException,
-			ParseFormatException, IOException {
+	public SATSolver(APTA apta, ConsistencyGraph cg, int colors,
+			String dimacsFile, String satSolverFile)
+			throws ContradictionException, ParseFormatException, IOException {
 		init(apta, cg, colors, dimacsFile, satSolverFile);
 	}
-	
-	public SATSolver(APTA apta, ConsistencyGraph cg, int colors, String dimacsFile, int timeout,
-			String satSolverFile) throws ContradictionException,
-			ParseFormatException, IOException {
+
+	public SATSolver(APTA apta, ConsistencyGraph cg, int colors,
+			String dimacsFile, int timeout, String satSolverFile)
+			throws ContradictionException, IOException {
 		init(apta, cg, colors, dimacsFile, satSolverFile);
 		timeoutString = " -t " + timeout + " ";
 	}
 
-	private void init(APTA apta, ConsistencyGraph cg, int colors, String dimacsFile,
-			String satSolverFile) throws IOException {
+	private void init(APTA apta, ConsistencyGraph cg, int colors,
+			String dimacsFile, String satSolverFile) throws IOException {
 		this.apta = apta;
 		this.vertices = apta.getSize();
-		this.dimacsFile = dimacsFile; 
+		this.dimacsFile = dimacsFile;
 		this.colors = colors;
 		this.satSolverFile = satSolverFile;
 		BufferedReader br = new BufferedReader(new FileReader(dimacsFile));
@@ -90,9 +92,11 @@ public class SATSolver {
 		if (satSolverFile == null) {
 			return problem.isSatisfiable();
 		} else {
-			Process process = new ProcessBuilder((satSolverFile + timeoutString + dimacsFile).split(" ")).start();
-//			Process process = Runtime.getRuntime().exec(
-//					satSolverFile + timeoutString + dimacsFile);
+			Process process = new ProcessBuilder(
+					(satSolverFile + timeoutString + dimacsFile).split(" "))
+					.start();
+			// Process process = Runtime.getRuntime().exec(
+			// satSolverFile + timeoutString + dimacsFile);
 			BufferedReader br = new BufferedReader(new InputStreamReader(
 					process.getInputStream()));
 			String line;

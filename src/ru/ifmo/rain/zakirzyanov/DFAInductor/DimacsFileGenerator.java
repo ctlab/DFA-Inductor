@@ -14,16 +14,28 @@ import java.util.Set;
 
 public class DimacsFileGenerator {
 
-	final static int WITHOUT_SB = 0;
-	final static int BFS_SB = 1;
-	final static int CLIQUE_SB = 2;
+	enum SBStrategy {
+		WITHOUT_SB, BFS_SB, CLIQUE_SB;
+	}
+
+	// Exception??
+
+	public SBStrategy getSBStrategyByNum(int num) {
+		switch (num) {
+		case 0:
+			return SBStrategy.WITHOUT_SB;
+		case 2:
+			return SBStrategy.CLIQUE_SB;
+		default:
+			return SBStrategy.BFS_SB;
+		}
+	}
 
 	private APTA apta;
 	private ConsistencyGraph cg;
 	private int colors;
 	private int maxVar;
 	private int vertices;
-	private PrintWriter pwDF;
 	private Set<String> alphabet;
 	private int[][] x;
 	private Map<String, Integer>[][] y;
@@ -36,37 +48,23 @@ public class DimacsFileGenerator {
 	private String tmpFile = "tmp";
 	private String dimacsFile;
 	private int countClauses = 0;
-	private int SB;
+	private SBStrategy SB;
 	private int noisyP;
 	private int noisySize;
 	private Set<Integer> acceptableClique;
 	private Set<Integer> rejectableClique;
 	private int color = 0;
 	private Set<Integer> ends;
+	
 
-	public DimacsFileGenerator(APTA apta, ConsistencyGraph cg, int colors,
-			int SB) throws IOException {
-		init(apta, cg, colors, SB, 0, "dimacsFile.cnf");
-	}
-
-	public DimacsFileGenerator(APTA apta, ConsistencyGraph cg, int colors,
-			int SB, int noisyP) throws IOException {
-		init(apta, cg, colors, SB, noisyP, "dimacsFile.cnf");
-	}
-
-	public DimacsFileGenerator(APTA apta, ConsistencyGraph cg, int colors,
+	public DimacsFileGenerator(APTA apta, ConsistencyGraph cg, int noisyP, int colors,
 			int SB, String dimacsFile) throws IOException {
-		init(apta, cg, colors, SB, 0, dimacsFile);
-	}
-
-	public DimacsFileGenerator(APTA apta, ConsistencyGraph cg, int colors,
-			int SB, int noisyP, String dimacsFile) throws IOException {
-		init(apta, cg, colors, SB, noisyP, dimacsFile);
+		init(apta, cg, colors, getSBStrategyByNum(SB), noisyP, dimacsFile);
 	}
 
 	@SuppressWarnings("unchecked")
-	private void init(APTA apta, ConsistencyGraph cg, int colors, int SB,
-			int noisyP, String dimacsFile) throws IOException {
+	private void init(APTA apta, ConsistencyGraph cg, int colors,
+			SBStrategy SB, int noisyP, String dimacsFile) throws IOException {
 		this.apta = apta;
 		this.cg = cg;
 		this.colors = colors;
@@ -75,10 +73,9 @@ public class DimacsFileGenerator {
 		this.maxVar = 1;
 		this.vertices = apta.getSize();
 		this.dimacsFile = dimacsFile;
-		this.pwDF = new PrintWriter(dimacsFile);
 		this.alphabet = apta.getAlphabet();
 		this.ends = new HashSet<>();
-	
+
 		this.x = new int[vertices][colors];
 		this.y = new HashMap[colors][colors];
 		this.z = new int[colors];
@@ -100,7 +97,7 @@ public class DimacsFileGenerator {
 			}
 		}
 
-		if (SB == BFS_SB) {
+		if (SB == SBStrategy.BFS_SB) {
 			this.e = new int[colors][colors];
 			this.p = new int[colors][colors];
 			for (int i = 0; i < colors; i++) {
@@ -127,7 +124,7 @@ public class DimacsFileGenerator {
 			}
 		}
 
-		if (SB == CLIQUE_SB) {
+		if (SB == SBStrategy.CLIQUE_SB) {
 			int maxDegree = 0;
 			int maxV = -1;
 			acceptableClique = new HashSet<>();
@@ -178,7 +175,7 @@ public class DimacsFileGenerator {
 		if (noisyP > 0) {
 			ends.addAll(apta.getAcceptableNodes());
 			ends.addAll(apta.getRejectableNodes());
-			
+
 			noisySize = ends.size() * this.noisyP / 100;
 			n = new int[noisySize][vertices];
 			f = new int[vertices];
@@ -197,9 +194,12 @@ public class DimacsFileGenerator {
 
 	public String generateFile() throws IOException {
 
+		
 		File tmp = new File(tmpFile);
 		PrintWriter tmpPW = new PrintWriter(tmp);
 		Buffer buffer = new Buffer(tmpPW);
+		
+		PrintWriter pwDF = new PrintWriter(dimacsFile);
 
 		printOneAtLeast(buffer);
 		printOneAtMost(buffer);
@@ -208,13 +208,13 @@ public class DimacsFileGenerator {
 		printParrentRelationAtLeastOneColor(buffer);
 		printParrentRelationForces(buffer);
 
-		if (SB == BFS_SB) {
+		if (SB == SBStrategy.BFS_SB) {
 			// root has 0 color
 			buffer.addClause(x[0][0]);
 			printSBPEdgeExist(buffer);
 			printSBPMinimalSymbol(buffer);
 			printSBPParent(buffer);
-		//	printSBPChildrenOrder(buffer);
+			// printSBPChildrenOrder(buffer);
 			if (apta.getAlphaSize() == 2) {
 				printSBPOrderByChildrenSymbolForSizeTwo(buffer);
 			} else {
@@ -223,7 +223,7 @@ public class DimacsFileGenerator {
 			printSBPOrderInLayer(buffer);
 			printSBPParentExist(buffer);
 		}
-		if (SB == CLIQUE_SB) {
+		if (SB == SBStrategy.CLIQUE_SB) {
 			printAcceptableCliqueSB(buffer);
 			printRejectableCliqueSB(buffer);
 		}
@@ -234,7 +234,7 @@ public class DimacsFileGenerator {
 			printNoisyOrdered(buffer);
 			printFProxy(buffer);
 			printAccVertDiffColorRejNoisy(buffer);
-			
+
 		} else {
 			printAccVertDiffColorRej(buffer);
 			printConflictsFromCG(buffer);
@@ -480,17 +480,17 @@ public class DimacsFileGenerator {
 		buffer.flush();
 	}
 
-	// p_{i,j} and !p_{i+1,j} => !p_{i+q, j}
-	private void printSBPChildrenOrder(Buffer buffer) {
-		for (int i = 1; i < colors; i++) {
-			for (int j = 0; j < i; j++) {
-				for (int k = i + 2; k < colors; k++) {
-					buffer.addClause(-p[i][j], p[i + 1][j], -p[k][j]);
-				}
-			}
-		}
-		buffer.flush();
-	}
+//	// p_{i,j} and !p_{i+1,j} => !p_{i+q, j}
+//	private void printSBPChildrenOrder(Buffer buffer) {
+//		for (int i = 1; i < colors; i++) {
+//			for (int j = 0; j < i; j++) {
+//				for (int k = i + 2; k < colors; k++) {
+//					buffer.addClause(-p[i][j], p[i + 1][j], -p[k][j]);
+//				}
+//			}
+//		}
+//		buffer.flush();
+//	}
 
 	// if alphabet size greater then 2
 	// p_{i,j} and p_{i+1,j} and m_{j,i,c_k} => !m_{j,i+1,c_(k-q)}
@@ -513,7 +513,7 @@ public class DimacsFileGenerator {
 	}
 
 	// if alphabet size equal to 2
-	// p_{i,j} and p_{i+1,j} => y_{j, i, 0} and y_{j, i + 1, 1} 
+	// p_{i,j} and p_{i+1,j} => y_{j, i, 0} and y_{j, i + 1, 1}
 	private void printSBPOrderByChildrenSymbolForSizeTwo(Buffer buffer) {
 		for (int i = 1; i < colors - 1; i++) {
 			for (int j = 0; j < i; j++) {
@@ -524,7 +524,6 @@ public class DimacsFileGenerator {
 		buffer.flush();
 	}
 
-	
 	// p_{i,j} => !p_{i+1,j-q}
 	private void printSBPOrderInLayer(Buffer buffer) {
 		for (int i = 1; i < colors - 1; i++) {
