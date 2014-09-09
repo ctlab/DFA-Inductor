@@ -22,7 +22,7 @@ public class Main {
 	@Option(name = "--sizeup", aliases = { "-su" }, usage = "maximum automaton size", metaVar = "<maxsimum size>", required = true)
 	private int maxSize;
 
-	@Option(name = "--sizedown", aliases = { "-su" }, usage = "minimum automaton size", metaVar = "<minimum size>")
+	@Option(name = "--sizedown", aliases = { "-sd" }, usage = "minimum automaton size", metaVar = "<minimum size>")
 	private int minSize = 1;
 
 	@Option(name = "--result", aliases = { "-r" }, usage = "write result automaton to this file", metaVar = "<result file>")
