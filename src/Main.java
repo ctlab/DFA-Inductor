@@ -8,6 +8,7 @@ import java.util.Locale;
 import java.util.logging.FileHandler;
 import java.util.logging.LogManager;
 import java.util.logging.Logger;
+import java.util.logging.SimpleFormatter;
 
 import org.sat4j.specs.ContradictionException;
 import org.sat4j.specs.TimeoutException;
@@ -38,7 +39,7 @@ public class Main {
 	private String externalSATSolver = "lingeling.exe";
 
 	@Option(name = "--dimacs", aliases = { "-d" }, usage = "write dimacs file with CNF to this file", metaVar = "<dimacs file>")
-	private String dimacsFile = "lingeling.exe";
+	private String dimacsFile = "dimacsFile.cnf";
 
 	@Option(name = "--log", aliases = { "-l" }, usage = "write log to this file", metaVar = "<log>")
 	private String logFile;
@@ -67,18 +68,11 @@ public class Main {
 			return;
 		}
 
-		try {
-			LogManager.getLogManager().readConfiguration(
-					Main.class.getResourceAsStream("/logging.properties"));
-		} catch (IOException e) {
-			System.err.println("Couldn't setup logging configuration: "
-					+ e.toString());
-		}
-
 		if (logFile != null) {
 			try {
 				FileHandler fh = new FileHandler(logFile, false);
 				logger.addHandler(fh);
+				fh.setFormatter(new SimpleFormatter());
 				logger.setUseParentHandlers(false);
 				System.out.println("Log file: " + logFile);
 			} catch (Exception e) {

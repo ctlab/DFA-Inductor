@@ -55,8 +55,8 @@ public class DimacsFileGenerator {
 	private Set<Integer> ends;
 	
 
-	public DimacsFileGenerator(APTA apta, ConsistencyGraph cg, int noisyP, int colors,
-			int SB, String dimacsFile) throws IOException {
+	public DimacsFileGenerator(APTA apta, ConsistencyGraph cg, int colors,
+			int SB, int noisyP, String dimacsFile) throws IOException {
 		init(apta, cg, colors, getSBStrategyByNum(SB), noisyP, dimacsFile);
 	}
 
@@ -109,14 +109,13 @@ public class DimacsFileGenerator {
 					p[i][j] = maxVar++;
 				}
 			}
-			if (apta.getAlphaSize() != 2) {
-				this.m = new HashMap[colors][colors];
-				for (int i = 0; i < colors; i++) {
-					for (int j = i + 1; j < colors; j++) {
-						m[i][j] = new HashMap<>();
-						for (String label : alphabet) {
-							m[i][j].put(label, maxVar++);
-						}
+
+			this.m = new HashMap[colors][colors];
+			for (int i = 0; i < colors; i++) {
+				for (int j = i + 1; j < colors; j++) {
+					m[i][j] = new HashMap<>();
+					for (String label : alphabet) {
+						m[i][j].put(label, maxVar++);
 					}
 				}
 			}
@@ -515,8 +514,8 @@ public class DimacsFileGenerator {
 	private void printSBPOrderByChildrenSymbolForSizeTwo(Buffer buffer) {
 		for (int i = 1; i < colors - 1; i++) {
 			for (int j = 0; j < i; j++) {
-				buffer.addClause(-p[i][j], -p[i + 1][j], y[j][i].get(0));
-				buffer.addClause(-p[i][j], -p[i + 1][j], y[j][i + 1].get(1));
+				buffer.addClause(-p[i][j], -p[i + 1][j], y[j][i].get("0"));
+				buffer.addClause(-p[i][j], -p[i + 1][j], y[j][i + 1].get("1"));
 			}
 		}
 		buffer.flush();
