@@ -1,5 +1,3 @@
-package ru.ifmo.rain.zakirzyanov.DFAInductor;
-
 import java.io.PrintWriter;
 
 public class Buffer {

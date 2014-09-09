@@ -1,5 +1,3 @@
-package ru.ifmo.rain.zakirzyanov.DFAInductor;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;

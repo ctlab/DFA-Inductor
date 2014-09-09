@@ -1,5 +1,3 @@
-package ru.ifmo.rain.zakirzyanov.DFAInductor;
-
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
