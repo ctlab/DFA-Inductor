@@ -27,19 +27,19 @@ public class SATSolver {
 	private String ansLine = null;
 	private int countClauses;
 	private int countVars;
+	private int timeout = 0;
 
 	public SATSolver(APTA apta, ConsistencyGraph cg, int colors,
 			String dimacsFile) throws ContradictionException,
 			ParseFormatException, IOException {
 		init(apta, cg, colors, dimacsFile, null);
-		problem = build(0);
 	}
 
 	public SATSolver(APTA apta, ConsistencyGraph cg, int colors,
 			String dimacsFile, int timeout) throws ContradictionException,
 			ParseFormatException, IOException {
+	    this.timeout = timeout;
 		init(apta, cg, colors, dimacsFile, null);
-		problem = build(timeout);
 	}
 
 	public SATSolver(APTA apta, ConsistencyGraph cg, int colors,
@@ -75,7 +75,7 @@ public class SATSolver {
 		br.close();
 	}
 
-	private IProblem build(int timeout) throws ContradictionException,
+	private IProblem build() throws ContradictionException,
 			ParseFormatException, IOException {
 		ISolver solver = SolverFactory.newDefault();
 		if (timeout > 0) {
@@ -86,8 +86,9 @@ public class SATSolver {
 		return problem;
 	}
 
-	public boolean problemIsSatisfiable() throws TimeoutException, IOException {
+	public boolean problemIsSatisfiable() throws TimeoutException, IOException, ParseFormatException, ContradictionException {
 		if (satSolverFile == null) {
+			problem = build();
 			return problem.isSatisfiable();
 		} else {
 			Process process = new ProcessBuilder(
