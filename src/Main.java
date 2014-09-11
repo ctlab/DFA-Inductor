@@ -94,9 +94,9 @@ public class Main {
 
 				APTA apta;
 				if (noisyMode) {
-					apta = new APTA(is, APTA.IS_NOISY);
+					apta = new APTA(is, true);
 				} else {
-					apta = new APTA(is, APTA.IS_NOT_NOISY);
+					apta = new APTA(is, false);
 				}
 				logger.info("APTA successfully builded");
 

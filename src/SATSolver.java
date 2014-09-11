@@ -156,9 +156,9 @@ public class SATSolver {
 			Node vertexNode = apta.getNode(vertex);
 
 			if (vertexNode.isAcceptable()) {
-				automat.getState(color).setStatus(Node.ACCEPTABLE);
+				automat.getState(color).setStatus(Node.Status.ACCEPTABLE);
 			} else if (vertexNode.isRejectable()) {
-				automat.getState(color).setStatus(Node.REJECTABLE);
+				automat.getState(color).setStatus(Node.Status.REJECTABLE);
 			}
 
 			for (Entry<String, Node> entry : apta.getNode(vertex).getChildren()

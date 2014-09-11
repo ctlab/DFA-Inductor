@@ -3,23 +3,23 @@ import java.util.Map;
 
 public class Node {
 
-	static final int ACCEPTABLE = 1;
-	static final int COMMON = 0;
-	static final int REJECTABLE = -1;
+	enum Status {
+		ACCEPTABLE, COMMON, REJECTABLE
+	}
 
 	private int number;
 	private Map<String, Node> children;
 	private Map<String, Node> parents;
-	private int status;
+	private Status status;
 
 	public Node(int number) {
 		this.number = number;
 		this.children = new HashMap<>();
 		this.parents = new HashMap<>();
-		this.status = COMMON;
+		this.status = Status.COMMON;
 	}
 
-	public Node(int number, int status) {
+	public Node(int number, Status status) {
 		this.number = number;
 		this.children = new HashMap<>();
 		this.parents = new HashMap<>();
@@ -31,10 +31,10 @@ public class Node {
 		this.children = new HashMap<>();
 		this.parents = new HashMap<>();
 		this.parents.put(label, father);
-		this.status = COMMON;
+		this.status = Status.COMMON;
 	}
 
-	public Node(int number, String label, Node father, int status) {
+	public Node(int number, String label, Node father, Status status) {
 		this.number = number;
 		this.children = new HashMap<>();
 		this.parents = new HashMap<>();
@@ -46,19 +46,19 @@ public class Node {
 		return number;
 	}
 
-	public int getStatus() {
+	public Status getStatus() {
 		return status;
 	}
 
 	public boolean isAcceptable() {
-		return status == ACCEPTABLE;
+		return status == Status.ACCEPTABLE;
 	}
 
 	public boolean isRejectable() {
-		return status == REJECTABLE;
+		return status == Status.REJECTABLE;
 	}
 
-	public void setStatus(int status) {
+	public void setStatus(Status status) {
 		this.status = status;
 	}
 

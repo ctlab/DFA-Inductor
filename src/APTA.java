@@ -9,12 +9,8 @@ import java.util.Set;
 import java.util.StringTokenizer;
 
 public class APTA {
-	
-	public static final boolean IS_NOISY = true;
-	public static final boolean IS_NOT_NOISY = false;
-	
 
-	private Node root;
+    private Node root;
 	private int size;
 	private int words;
 	@SuppressWarnings("unused")
@@ -70,7 +66,6 @@ public class APTA {
 				alphabet.add(label);
 				if (currentNode.getChildren().containsKey(label)) {
 					currentNode = currentNode.getChildren().get(label);
-					continue;
 				} else {
 					newNode = new Node(size, label, currentNode);
 					indexesOfNodes.put(size++, newNode);
@@ -80,13 +75,11 @@ public class APTA {
 			}
 			if (status == 1) {
 				acceptableNodes.add(currentNode.getNumber());
+				currentNode.setStatus(Node.Status.ACCEPTABLE);
 			} else {
 				rejectableNodes.add(currentNode.getNumber());
+				currentNode.setStatus(Node.Status.REJECTABLE);
 			}
-			if (status == 0) {
-				status = Node.REJECTABLE;
-			}
-			currentNode.setStatus(status);
 		}
 	}
 
@@ -128,8 +121,7 @@ public class APTA {
 
 	// node can be null
 	public Node getNode(int i) {
-		Node node = indexesOfNodes.get(i);
-		return node;
+		return indexesOfNodes.get(i);
 	}
 	
 	public boolean isNoisy() {
