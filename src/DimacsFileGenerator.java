@@ -42,6 +42,7 @@ public class DimacsFileGenerator {
 	private Map<String, Integer>[][] m;
 	private int[][] p;
 	private int[][] n;
+	private int[][] o;
 	private int[] f;
 	private String tmpFile = "tmp";
 	private String dimacsFile;
@@ -175,11 +176,18 @@ public class DimacsFileGenerator {
 
 			noisySize = ends.size() * this.noisyP / 100;
 			n = new int[noisySize][vertices];
+			o = new int[noisySize][vertices + 1];
 			f = new int[vertices];
 
 			for (int i = 0; i < noisySize; i++) {
 				for (int j = 0; j < vertices; j++) {
 					n[i][j] = maxVar++;
+				}
+			}
+
+			for (int i = 0; i < noisySize; i++) {
+				for (int j = 0; j < vertices + 1; j++) {
+					o[i][j] = maxVar++;
 				}
 			}
 
@@ -226,9 +234,12 @@ public class DimacsFileGenerator {
 		}
 
 		if (noisyP > 0) {
-			printOneAtLeastInNoisy(buffer);
-			printOneAtMostInNoisy(buffer);
-			printNoisyOrdered(buffer);
+//			printOneAtLeastInNoisy(buffer);
+//			printOneAtMostInNoisy(buffer);
+//			printNoisyOrdered(buffer);
+			printNoisyNProxy(buffer);
+			printNoisyOneUnderOne(buffer);
+			printNoisyOrderingDiagonal(buffer);
 			printFProxy(buffer);
 			printAccVertDiffColorRejNoisy(buffer);
 
@@ -615,6 +626,39 @@ public class DimacsFileGenerator {
 			}
 		}
 		buffer.flush();
+	}
+
+	//n_{q,i} <=> o_{q,i} \/ ~o_{q,i+1}
+	private void printNoisyNProxy(Buffer buffer) {
+		for (int q = 0; q < noisySize; q++) {
+			for (int i = 0; i < vertices; i++) {
+				buffer.addClause(n[q][i], -o[q][i], o[q][i + 1]);
+				buffer.addClause(-n[q][i], o[q][i]);
+				buffer.addClause(-n[q][i], -o[q][i+1]);
+			}
+			buffer.addClause(o[q][0]);
+			buffer.addClause(-o[q][vertices]);
+		}
+		buffer.flush();
+	}
+
+	//o_{q,i} => o_{q,i-1}
+	private void printNoisyOneUnderOne(Buffer buffer) {
+		for (int q = 0; q < noisySize; q++) {
+			for (int i = 1; i < vertices; i++) {
+				buffer.addClause(-o[q][i], o[q][i - 1]);
+			}
+		}
+		buffer.flush();
+	}
+
+	//o_{q,i} => o_{q+1,i+1}
+	private void printNoisyOrderingDiagonal(Buffer buffer) {
+		for (int q = 0; q < noisySize - 1; q++) {
+			for (int i = 0; i < vertices - 1; i++) {
+				buffer.addClause(-o[q][i], o[q + 1][i + 1]);
+			}
+		}
 	}
 
 	// f_v <=> n_{1,v} \/ ... \/ n_{k, v}.
