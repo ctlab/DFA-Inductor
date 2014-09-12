@@ -7,12 +7,16 @@
 
     <property name="main.main" value="Main"/>
     <property name="main.jar" value="main.jar"/>
-    
+
+    <property name="dicGen.main" value="DictionaryGeneratorMain"/>
+    <property name="dicGen.jar" value="dicGen.jar"/>
+
     <property name="args4j.path" value="${lib.dir}/args4j.jar"/>
     <property name="sat4j.path" value="${lib.dir}/sat4j-sat.jar"/>
 
-    <target name="all" 
-            depends="main-jar">
+    <target name="all"
+            depends="main-jar,
+                     dicGen-jar">
     </target>
 
     <target name="main-jar">
@@ -39,6 +43,31 @@
         </jar>
 
     </target>
+
+    <target name="dicGen-jar">
+        <mkdir dir="${bin.dir}"/>
+        <mkdir dir="${jars.dir}"/>
+
+        <javac srcdir="${src.dir}"
+               destdir="${bin.dir}"
+               classpath="${sat4j.path}:${args4j.path}"
+               includeantruntime="false"
+               debug="true"
+               debuglevel="lines,vars,source">
+            <include name="**"/>
+        </javac>
+
+        <jar destfile="${jars.dir}/${dicGen.jar}"
+             basedir="${bin.dir}">
+            <manifest>
+                <attribute name="Main-Class" value="${dicGen.main}"/>
+            </manifest>
+
+            <zipfileset src="${sat4j.path}" excludes="META-INF/*.SF"/>
+            <zipfileset src="${args4j.path}" excludes="META-INF/*.SF"/>
+        </jar>
+    </target>
+
 
     <target name="clean">
         <delete dir="${bin.dir}"/>

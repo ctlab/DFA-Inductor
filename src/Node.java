@@ -67,11 +67,7 @@ public class Node {
 	}
 
 	public Node getParent(String s) {
-		if (parents.containsKey(s)) {
-			return parents.get(s);
-		} else {
-			return null;
-		}
+		return parents.containsKey(s) ? parents.get(s) : null;
 	}
 
 	public Map<String, Node> getChildren() {
@@ -79,7 +75,7 @@ public class Node {
 	}
 	
 	public Node getChild(String s) {
-		return children.get(s);
+		return children.containsKey(s) ? children.get(s) : null;
 	}
 
 	public void addChild(String s, Node child) {

@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.logging.FileHandler;
@@ -75,6 +76,11 @@ public class Main {
 			return;
 		}
 
+		if (SBStrategy == 2 && noisyMode) {
+			System.err.println("You can't use CLIQUE symmetry breaking strategy during solving " +
+					"noisy DFA building problem");
+		}
+
 		if (logFile != null) {
 			try {
 				FileHandler fh = new FileHandler(logFile, false);
@@ -99,6 +105,11 @@ public class Main {
 					apta = new APTA(is, false);
 				}
 				logger.info("APTA successfully builded");
+				//------------------------------------------------
+				logger.info("APTA size: " + apta.getSize());
+				logger.info("Ends in APTA: " + (apta.getAcceptableNodes().size() + apta.getRejectableNodes().size()));
+				logger.info("Count of words: " + apta.getCountOfWords());
+				//-----------------------------------------------
 
 				ConsistencyGraph cg;
 				if (noisyMode) {

@@ -47,9 +47,9 @@ public class APTA {
 		int lines = nextInt();
 		words = lines;
 		int alphaSize = nextInt();
-		if (isNoisy) {
-			colors = nextInt();
-		}
+//		if (isNoisy) {
+//			colors = nextInt();
+//		}
 		this.alphaSize = alphaSize;
 		root = new Node(size);
 		indexesOfNodes.put(size++, root);
