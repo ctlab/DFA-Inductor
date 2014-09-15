@@ -4,11 +4,8 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Set;
 
 public class DimacsFileGenerator {
 
@@ -41,9 +38,9 @@ public class DimacsFileGenerator {
 	private int[][] e;
 	private Map<String, Integer>[][] m;
 	private int[][] p;
-	private int[][] n;
-	private int[][] o;
-	private int[] f;
+	private List<List<Integer>> n;
+	private List<List<Integer>> o;
+	private List<Integer> f;
 	private String tmpFile = "tmp";
 	private String dimacsFile;
 	private int countClauses = 0;
@@ -53,7 +50,7 @@ public class DimacsFileGenerator {
 	private Set<Integer> acceptableClique;
 	private Set<Integer> rejectableClique;
 	private int color = 0;
-	private Set<Integer> ends;
+	private List<Integer> ends;
 	
 
 	public DimacsFileGenerator(APTA apta, ConsistencyGraph cg, int colors,
@@ -73,7 +70,7 @@ public class DimacsFileGenerator {
 		this.vertices = apta.getSize();
 		this.dimacsFile = dimacsFile;
 		this.alphabet = apta.getAlphabet();
-		this.ends = new HashSet<>();
+		this.ends = new ArrayList<>();
 
 		this.x = new int[vertices][colors];
 		this.y = new HashMap[colors][colors];
@@ -173,26 +170,30 @@ public class DimacsFileGenerator {
 		if (noisyP > 0) {
 			ends.addAll(apta.getAcceptableNodes());
 			ends.addAll(apta.getRejectableNodes());
+			Collections.sort(ends);
 
 			noisySize = ends.size() * this.noisyP / 100;
-			n = new int[noisySize][vertices];
-			o = new int[noisySize][vertices + 1];
-			f = new int[vertices];
 
+			n = new ArrayList<>();
 			for (int i = 0; i < noisySize; i++) {
-				for (int j = 0; j < vertices; j++) {
-					n[i][j] = maxVar++;
+				n.add(new ArrayList<Integer>());
+				for (int v : ends) {
+					n.get(i).add(maxVar++);
 				}
 			}
 
+			o = new ArrayList<>();
 			for (int i = 0; i < noisySize; i++) {
-				for (int j = 0; j < vertices + 1; j++) {
-					o[i][j] = maxVar++;
+				o.add(new ArrayList<Integer>());
+				for (int v : ends) {
+					o.get(i).add(maxVar++);
 				}
+				o.get(i).add(maxVar++);
 			}
 
-			for (int i = 0; i < vertices; i++) {
-				f[i] = maxVar++;
+			f = new ArrayList<>();
+			for (int v : ends) {
+				f.add(maxVar++);
 			}
 		}
 	}
@@ -582,62 +583,60 @@ public class DimacsFileGenerator {
 		buffer.flush();
 	}
 
-	// n_{q,1} \/ n_{q,2} \/ ... \/ n_{q,|V|}
-	private void printOneAtLeastInNoisy(Buffer buffer) {
-		for (int q = 0; q < noisySize; q++) {
-			StringBuilder sb = new StringBuilder();
-			for (int i = 0; i < vertices; i++) {
-				if (ends.contains(i)) {
-					sb.append(n[q][i] + " ");
-				}
-			}
-			buffer.addClause(sb);
-		}
-		buffer.flush();
-	}
-
-	// ~n[q,i] \/ ~n[q,j]
-	private void printOneAtMostInNoisy(Buffer buffer) {
-		for (int q = 0; q < noisySize; q++) {
-			for (int i = 0; i < vertices; i++) {
-				if (ends.contains(i)) {
-					for (int j = i + 1; j < vertices; j++) {
-						if (ends.contains(j)) {
-							buffer.addClause(-n[q][i], -n[q][j]);
-						}
-					}
-				}
-			}
-		}
-		buffer.flush();
-	}
-
-	// n_{q,i} => ~n_{q+1,i-j}
-	private void printNoisyOrdered(Buffer buffer) {
-		for (int q = 0; q < noisySize - 1; q++) {
-			for (int i = 0; i < vertices; i++) {
-				if (ends.contains(i)) {
-					for (int j = 0; j < i; j++) {
-						if (ends.contains(j)) {
-							buffer.addClause(-n[q][i], -n[q + 1][j]);
-						}
-					}
-				}
-			}
-		}
-		buffer.flush();
-	}
+//	// n_{q,1} \/ n_{q,2} \/ ... \/ n_{q,|V|}
+//	private void printOneAtLeastInNoisy(Buffer buffer) {
+//		for (int q = 0; q < noisySize; q++) {
+//			StringBuilder sb = new StringBuilder();
+//			for (int i = 0; i < vertices; i++) {
+//				if (ends.contains(i)) {
+//					sb.append(n[q][i] + " ");
+//				}
+//			}
+//			buffer.addClause(sb);
+//		}
+//		buffer.flush();
+//	}
+//
+//	// ~n[q,i] \/ ~n[q,j]
+//	private void printOneAtMostInNoisy(Buffer buffer) {
+//		for (int q = 0; q < noisySize; q++) {
+//			for (int i = 0; i < vertices; i++) {
+//				if (ends.contains(i)) {
+//					for (int j = i + 1; j < vertices; j++) {
+//						if (ends.contains(j)) {
+//							buffer.addClause(-n[q][i], -n[q][j]);
+//						}
+//					}
+//				}
+//			}
+//		}
+//		buffer.flush();
+//	}
+//
+//	// n_{q,i} => ~n_{q+1,i-j}
+//	private void printNoisyOrdered(Buffer buffer) {
+//		for (int q = 0; q < noisySize - 1; q++) {
+//			for (int i = 0; i < vertices; i++) {
+//				if (ends.contains(i)) {
+//					for (int j = 0; j < i; j++) {
+//						if (ends.contains(j)) {
+//							buffer.addClause(-n[q][i], -n[q + 1][j]);
+//						}
+//					}
+//				}
+//			}
+//		}
+//		buffer.flush();
+//	}
 
 	//n_{q,i} <=> o_{q,i} \/ ~o_{q,i+1}
 	private void printNoisyNProxy(Buffer buffer) {
 		for (int q = 0; q < noisySize; q++) {
-			for (int i = 0; i < vertices; i++) {
-				buffer.addClause(n[q][i], -o[q][i], o[q][i + 1]);
-				buffer.addClause(-n[q][i], o[q][i]);
-				buffer.addClause(-n[q][i], -o[q][i+1]);
+			for (int i = 0; i < n.get(q).size(); i++) {
+				buffer.addClause(n.get(q).get(i), -o.get(q).get(i), o.get(q).get(i + 1));
+				buffer.addClause(-n.get(q).get(i), o.get(q).get(i));
+				buffer.addClause(-n.get(q).get(i), -o.get(q).get(i + 1));
 			}
-			buffer.addClause(o[q][0]);
-			buffer.addClause(-o[q][vertices]);
 		}
 		buffer.flush();
 	}
@@ -645,8 +644,8 @@ public class DimacsFileGenerator {
 	//o_{q,i} => o_{q,i-1}
 	private void printNoisyOneUnderOne(Buffer buffer) {
 		for (int q = 0; q < noisySize; q++) {
-			for (int i = 1; i < vertices; i++) {
-				buffer.addClause(-o[q][i], o[q][i - 1]);
+			for (int i = 1; i < o.get(q).size(); i++) {
+				buffer.addClause(-o.get(q).get(i), o.get(q).get(i - 1));
 			}
 		}
 		buffer.flush();
@@ -655,24 +654,23 @@ public class DimacsFileGenerator {
 	//o_{q,i} => o_{q+1,i+1}
 	private void printNoisyOrderingDiagonal(Buffer buffer) {
 		for (int q = 0; q < noisySize - 1; q++) {
-			for (int i = 0; i < vertices - 1; i++) {
-				buffer.addClause(-o[q][i], o[q + 1][i + 1]);
+			for (int i = 0; i < o.get(q).size() - 1; i++) {
+				buffer.addClause(-o.get(q).get(i), o.get(q + 1).get(i + 1));
 			}
 		}
+		buffer.flush();
 	}
 
 	// f_v <=> n_{1,v} \/ ... \/ n_{k, v}.
 	private void printFProxy(Buffer buffer) {
-		for (int v = 0; v < vertices; v++) {
-			if (ends.contains(v)) {
-				int fv = f[v];
-				StringBuilder tmp = new StringBuilder(-fv + " ");
-				for (int q = 0; q < noisySize; q++) {
-					buffer.addClause(fv, -n[q][v]);
-					tmp.append(n[q][v] + " ");
-				}
-				buffer.addClause(tmp);
+		for (int v = 0; v < f.size(); v++) {
+			int fv = f.get(v);
+			StringBuilder tmp = new StringBuilder(-fv + " ");
+			for (int q = 0; q < noisySize; q++) {
+				buffer.addClause(fv, -n.get(q).get(v));
+				tmp.append(n.get(q).get(v) + " ");
 			}
+			buffer.addClause(tmp);
 		}
 		buffer.flush();
 	}
@@ -680,11 +678,12 @@ public class DimacsFileGenerator {
 	// (f_v \/ ~x_{v,i} \/ z_i) /\ (f_w \/~x_{w,i} \/ ~z_i)
 	private void printAccVertDiffColorRejNoisy(Buffer buffer) {
 		for (int i = 0; i < colors; i++) {
-			for (Integer acc : apta.getAcceptableNodes()) {
-				buffer.addClause(f[acc], -x[acc][i], z[i]);
-			}
-			for (Integer rej : apta.getRejectableNodes()) {
-				buffer.addClause(f[rej], -x[rej][i], -z[i]);
+			for (int v = 0; v < f.size(); v++) {
+				if (apta.getAcceptableNodes().contains(ends.get(v))) {
+					buffer.addClause(f.get(v), -x[ends.get(v)][i], z[i]);
+				} else {
+					buffer.addClause(f.get(v), -x[ends.get(v)][i], -z[i]);
+				}
 			}
 		}
 		buffer.flush();
