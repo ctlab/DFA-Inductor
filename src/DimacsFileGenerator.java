@@ -637,6 +637,8 @@ public class DimacsFileGenerator {
 				buffer.addClause(-n.get(q).get(i), o.get(q).get(i));
 				buffer.addClause(-n.get(q).get(i), -o.get(q).get(i + 1));
 			}
+			buffer.addClause(o.get(q).get(0));
+			buffer.addClause(- o.get(q).get(ends.size()));
 		}
 		buffer.flush();
 	}
