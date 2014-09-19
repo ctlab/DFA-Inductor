@@ -50,18 +50,15 @@ public class Main {
 	@Option(name = "--log", aliases = { "-l" }, usage = "write log to this file", metaVar = "<log>")
 	private String logFile;
 
-	@Option(name = "--noisy", aliases = { "-n" }, usage = "noisy mode", metaVar = "<noisy mode>",
-			handler = BooleanOptionHandler.class, depends = { "--percent" })
-	private boolean noisyMode;
-
-	@Option(name = "--percent", aliases = { "-p" }, usage = "percent of noisy data", metaVar = "<noisy percent>",
-			hidden = true, depends = { "--noisy" })
+	@Option(name = "--percent", aliases = { "-p" }, usage = "percent of noisy data", metaVar = "<noisy percent>")
 	private int p = 0;
 
 	@Argument(usage = "dictionary files", metaVar = "files", required = true)
 	private List<String> files = new ArrayList<>();
 
 	private static Logger logger = Logger.getLogger("Logger");
+
+	private boolean noisyMode;
 
 	private void launch(String... args) {
 		CmdLineParser parser = new CmdLineParser(this);
@@ -76,6 +73,7 @@ public class Main {
 			return;
 		}
 
+		noisyMode = p > 0 ? true : false;
 		if (SBStrategy == 2 && noisyMode) {
 			System.err.println("You can't use CLIQUE symmetry breaking strategy during solving " +
 					"noisy DFA building problem");
