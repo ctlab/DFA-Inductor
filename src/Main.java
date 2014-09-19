@@ -53,8 +53,8 @@ public class Main {
 	@Option(name = "--percent", aliases = { "-p" }, usage = "percent of noisy data", metaVar = "<noisy percent>")
 	private int p = 0;
 
-	@Argument(usage = "dictionary files", metaVar = "files", required = true)
-	private List<String> files = new ArrayList<>();
+	@Argument(usage = "dictionary file", metaVar = "<file>", required = true)
+	private String file = new String();
 
 	private static Logger logger = Logger.getLogger("Logger");
 
@@ -66,7 +66,7 @@ public class Main {
 			parser.parseArgument(args);
 		} catch (CmdLineException e) {
 			System.err.println(e.getMessage());
-			System.err.print("Usage ");
+			System.err.print("Usage:");
 			parser.printSingleLineUsage(System.err);
 			System.err.println();
 			parser.printUsage(System.err);
@@ -92,79 +92,76 @@ public class Main {
 			}
 		}
 
-		for (String file : files) {
-			try (InputStream is = new FileInputStream(file)) {
-				logger.info("Working with file \"" + file + "\" started");
+		try (InputStream is = new FileInputStream(file)) {
+			logger.info("Working with file \"" + file + "\" started");
 
-				APTA apta;
-				if (noisyMode) {
-					apta = new APTA(is, true);
-				} else {
-					apta = new APTA(is, false);
-				}
-				logger.info("APTA successfully builded");
-				//------------------------------------------------
-				logger.info("APTA size: " + apta.getSize());
-				logger.info("Ends in APTA: " + (apta.getAcceptableNodes().size() + apta.getRejectableNodes().size()));
-				logger.info("Count of words: " + apta.getCountOfWords());
-				//-----------------------------------------------
+			APTA apta;
+			if (noisyMode) {
+				apta = new APTA(is, true);
+			} else {
+				apta = new APTA(is, false);
+			}
+			logger.info("APTA successfully builded");
+			//------------------------------------------------
+			logger.info("APTA size: " + apta.getSize());
+			logger.info("Ends in APTA: " + (apta.getAcceptableNodes().size() + apta.getRejectableNodes().size()));
+			logger.info("Count of words: " + apta.getCountOfWords());
+			//-----------------------------------------------
 
-				ConsistencyGraph cg;
-				if (noisyMode) {
-					cg = new ConsistencyGraph();
-				} else {
-					cg = new ConsistencyGraph(apta);
-					logger.info("CG successfully builded");
-				}
+			ConsistencyGraph cg;
+			if (noisyMode) {
+				cg = new ConsistencyGraph();
+			} else {
+				cg = new ConsistencyGraph(apta);
+				logger.info("CG successfully builded");
+			}
 
-				for (int colors = minSize; colors <= maxSize; colors++) {
-					logger.info("Try to build automaton with " + colors + " colors");
-					long startTime = 0;
-					try {
-						new DimacsFileGenerator(apta, cg, colors, SBStrategy, p, dimacsFile).generateFile();
-						logger.info("SAT problem in dimacs format successfully generated");
+			for (int colors = minSize; colors <= maxSize; colors++) {
+				logger.info("Try to build automaton with " + colors + " colors");
+				long startTime = 0;
+				try {
+					new DimacsFileGenerator(apta, cg, colors, SBStrategy, p, dimacsFile).generateFile();
+					logger.info("SAT problem in dimacs format successfully generated");
 
-						SATSolver solver = new SATSolver(apta, cg, colors, dimacsFile, timeout, externalSATSolver);
-						logger.info("SAT solver successfully initialized");
+					SATSolver solver = new SATSolver(apta, cg, colors, dimacsFile, timeout, externalSATSolver);
+					logger.info("SAT solver successfully initialized");
 
-						logger.info("Vars in the SAT problem: " + solver.nVars());
-						logger.info("Constraints in the SAT problem: " + solver.nConstraints());
+					logger.info("Vars in the SAT problem: " + solver.nVars());
+					logger.info("Constraints in the SAT problem: " + solver.nConstraints());
 
-						startTime = System.currentTimeMillis();
-						if (solver.problemIsSatisfiable()) {
-							logger.info("The automaton with " + colors + " colors was found! :)");
-							logger.info("Execution time: " + (System.currentTimeMillis() - startTime) / 1000.);
-							Automat automat = solver.getModel();
-							try (PrintWriter pw = new PrintWriter(resultFilePath)) {
-								pw.print(automat + "\n");
-							} catch (IOException e) {
-								logger.info("Problem with result file: " + e.getMessage());
-							}
-							break;
-						} else {
-							logger.info("The automaton with " + colors + " colors wasn't found! :(");
-							logger.info("Execution time: " + (System.currentTimeMillis() - startTime) / 1000.);
-
+					startTime = System.currentTimeMillis();
+					if (solver.problemIsSatisfiable()) {
+						logger.info("The automaton with " + colors + " colors was found! :)");
+						logger.info("Execution time: " + (System.currentTimeMillis() - startTime) / 1000.);
+						Automat automat = solver.getModel();
+						try (PrintWriter pw = new PrintWriter(resultFilePath)) {
+							pw.print(automat + "\n");
+						} catch (IOException e) {
+							logger.info("Problem with result file: " + e.getMessage());
 						}
-					} catch (ContradictionException e) {
+						break;
+					} else {
 						logger.info("The automaton with " + colors + " colors wasn't found! :(");
 						logger.info("Execution time: " + (System.currentTimeMillis() - startTime) / 1000.);
 
-					} catch (TimeoutException e) {
-						logger.info("Timeout" + timeout + " seconds was reached");
-					} catch (IOException e) {
-						logger.warning("Some problem with generating dimacs file: " + e.getMessage());
-						return;
-					} catch (ParseFormatException e) {
-						logger.warning("Some problem with parsing dimacs file:" +
-								" " + e.getMessage());
 					}
+				} catch (ContradictionException e) {
+					logger.info("The automaton with " + colors + " colors wasn't found! :(");
+					logger.info("Execution time: " + (System.currentTimeMillis() - startTime) / 1000.);
+
+				} catch (TimeoutException e) {
+					logger.info("Timeout" + timeout + " seconds was reached");
+				} catch (IOException e) {
+					logger.warning("Some problem with generating dimacs file: " + e.getMessage());
+					return;
+				} catch (ParseFormatException e) {
+					logger.warning("Some problem with parsing dimacs file:" +
+							" " + e.getMessage());
 				}
-				logger.info("Working with file \"" + file + "\" finished\n");
-			} catch (IOException e) {
-				logger.warning("Some unexpected problem with file \"" + file + "\":" + e.getMessage());
-				continue;
 			}
+			logger.info("Working with file \"" + file + "\" finished\n");
+		} catch (IOException e) {
+			logger.warning("Some unexpected problem with file \"" + file + "\":" + e.getMessage());
 		}
 	}
 
