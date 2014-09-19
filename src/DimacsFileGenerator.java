@@ -375,7 +375,7 @@ public class DimacsFileGenerator {
 	}
 
 	// each parent relation must target at least one color
-	// (!y_{i,h,a} or !y_{i,j,a}) where a in Alphabet, h < j
+	//(y_{i,1,a} or ... or y_{i,|C|,a})
 	private void printParrentRelationAtLeastOneColor(Buffer buffer) {
 		for (String st : apta.getAlphabet()) {
 			for (int i = 0; i < colors; i++) {
@@ -629,7 +629,7 @@ public class DimacsFileGenerator {
 //		buffer.flush();
 //	}
 
-	//n_{q,i} <=> o_{q,i} \/ ~o_{q,i+1}
+	//n_{q,i} <=> o_{q,i} /\ ~o_{q,i+1}
 	private void printNoisyNProxy(Buffer buffer) {
 		for (int q = 0; q < noisySize; q++) {
 			for (int i = 0; i < n.get(q).size(); i++) {
@@ -638,7 +638,7 @@ public class DimacsFileGenerator {
 				buffer.addClause(-n.get(q).get(i), -o.get(q).get(i + 1));
 			}
 			buffer.addClause(o.get(q).get(0));
-			buffer.addClause(- o.get(q).get(ends.size()));
+			buffer.addClause(-o.get(q).get(ends.size()));
 		}
 		buffer.flush();
 	}
