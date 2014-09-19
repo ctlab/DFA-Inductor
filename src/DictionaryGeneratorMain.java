@@ -30,15 +30,12 @@ public class DictionaryGeneratorMain {
 	@Option(name = "--log", aliases = {"-l"}, usage = "write log to this file", metaVar = "<log>")
 	private String logFile;
 
-	@Option(name = "--noisy", aliases = {"-n"}, usage = "noisy mode", metaVar = "<noisy mode>",
-			handler = BooleanOptionHandler.class, depends = {"--percent"})
-	private boolean noisyMode;
-
-	@Option(name = "--percent", aliases = {"-p"}, usage = "percent of noisy data", metaVar = "<noisy percent>",
-			hidden = true, depends = {"--noisy"})
+	@Option(name = "--percent", aliases = {"-p"}, usage = "percent of noisy data", metaVar = "<noisy percent>")
 	private int p = 0;
 
 	private static Logger logger = Logger.getLogger("Logger");
+	
+	private boolean noisyMode;
 
 	private void launch(String... args) {
 		CmdLineParser parser = new CmdLineParser(this);
@@ -52,6 +49,8 @@ public class DictionaryGeneratorMain {
 			parser.printUsage(System.err);
 			return;
 		}
+
+		noisyMode = p > 0 ? true : false;
 
 		if (logFile != null) {
 			try {
@@ -78,7 +77,7 @@ public class DictionaryGeneratorMain {
 			}
 
 			String fileName = resultFilePath + suffix;
-			logger.info("Starting generating file " + resultFilePath);
+			logger.info("Starting generating file " + fileName);
 
 			List<Node> nodes = new ArrayList<>();
 			for (int number = 0; number < size; number++) {
@@ -130,7 +129,7 @@ public class DictionaryGeneratorMain {
 				curNode.setStatus(status);
 			}
 
-			logger.info("Generating words for: " + resultFilePath);
+			logger.info("Generating words for: " + fileName);
 			try (PrintWriter pw = new PrintWriter(new File(fileName))) {
 				pw.println(words + " " + 2);
 
@@ -180,7 +179,7 @@ public class DictionaryGeneratorMain {
 					}
 				}
 			} catch (FileNotFoundException e) {
-				logger.info("Some problem with result file " + resultFilePath + ": " + e.getMessage());
+				logger.info("Some problem with result file " + fileName + ": " + e.getMessage());
 				e.printStackTrace();
 			}
 
