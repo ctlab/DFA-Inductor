@@ -15,7 +15,7 @@ public class ConsistencyGraph {
 		this.apta = new APTA();
 		this.edges = new HashMap<>();
 	}
-	
+
 	public ConsistencyGraph(APTA apta) {
 		edges = new HashMap<>();
 		this.apta = apta;
@@ -119,7 +119,7 @@ public class ConsistencyGraph {
 			return false;
 		}
 		Triple newRep = new Triple(Math.min(nodeRep.num, otherRep.num),
-				nodeRep.isAcc || otherRep.isAcc, 
+				nodeRep.isAcc || otherRep.isAcc,
 				nodeRep.isRej || otherRep.isRej);
 		merged.put(nodeRep.num, newRep);
 		merged.put(node.getNumber(), newRep);

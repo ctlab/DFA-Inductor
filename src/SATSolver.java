@@ -1,11 +1,3 @@
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Map.Entry;
-
 import org.sat4j.minisat.SolverFactory;
 import org.sat4j.reader.DimacsReader;
 import org.sat4j.reader.ParseFormatException;
@@ -14,6 +6,14 @@ import org.sat4j.specs.ContradictionException;
 import org.sat4j.specs.IProblem;
 import org.sat4j.specs.ISolver;
 import org.sat4j.specs.TimeoutException;
+
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Map.Entry;
 
 public class SATSolver {
 
@@ -30,39 +30,39 @@ public class SATSolver {
 	private int timeout = 0;
 
 	public SATSolver(APTA apta, int colors,
-			String dimacsFile) throws ContradictionException,
+	                 String dimacsFile) throws ContradictionException,
 			ParseFormatException, IOException {
 		init(apta, colors, dimacsFile, null);
 	}
 
 	public SATSolver(APTA apta, int colors,
-			String dimacsFile, int timeout) throws ContradictionException,
+	                 String dimacsFile, int timeout) throws ContradictionException,
 			ParseFormatException, IOException {
-	    this.timeout = timeout;
+		this.timeout = timeout;
 		init(apta, colors, dimacsFile, null);
 	}
 
 	public SATSolver(APTA apta, int colors,
-			String dimacsFile, String satSolverFile)
+	                 String dimacsFile, String satSolverFile)
 			throws ContradictionException, ParseFormatException, IOException {
 		init(apta, colors, dimacsFile, satSolverFile);
 	}
 
 	public SATSolver(APTA apta, int colors,
-			String dimacsFile, int timeout, String satSolverFile)
+	                 String dimacsFile, int timeout, String satSolverFile)
 			throws ContradictionException, IOException {
 		init(apta, colors, dimacsFile, satSolverFile);
 		timeoutString = " -t " + timeout + " ";
 	}
 
 	private void init(APTA apta, int colors,
-			String dimacsFile, String satSolverFile) throws IOException {
+	                  String dimacsFile, String satSolverFile) throws IOException {
 		this.apta = apta;
 		this.vertices = apta.getSize();
 		this.dimacsFile = dimacsFile;
 		this.colors = colors;
 		this.satSolverFile = satSolverFile;
-		try(BufferedReader br = new BufferedReader(new FileReader(dimacsFile))) {
+		try (BufferedReader br = new BufferedReader(new FileReader(dimacsFile))) {
 			String line;
 			while ((line = br.readLine()) != null) {
 				if (line.startsWith("p cnf ")) {
@@ -95,7 +95,7 @@ public class SATSolver {
 					.start();
 			// Process process = Runtime.getRuntime().exec(
 			// satSolverFile + timeoutString + dimacsFile);
-			try(BufferedReader br = new BufferedReader(new InputStreamReader(
+			try (BufferedReader br = new BufferedReader(new InputStreamReader(
 					process.getInputStream()))) {
 				String line;
 				while ((line = br.readLine()) != null) {

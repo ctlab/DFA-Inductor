@@ -17,36 +17,36 @@ import java.util.logging.SimpleFormatter;
 
 public class Main {
 
-	@Option(name = "--sizeup", aliases = { "-su" }, usage = "maximum automaton" + " size", metaVar = "<maxsimum size>",
+	@Option(name = "--sizeup", aliases = {"-su"}, usage = "maximum automaton" + " size", metaVar = "<maxsimum size>",
 			required = true)
 	private int maxSize;
 
-	@Option(name = "--sizedown", aliases = { "-sd" }, usage = "minimum automaton size", metaVar = "<minimum size>")
+	@Option(name = "--sizedown", aliases = {"-sd"}, usage = "minimum automaton size", metaVar = "<minimum size>")
 	private int minSize = 1;
 
-	@Option(name = "--result", aliases = { "-r" }, usage = "write result automaton to this file",
+	@Option(name = "--result", aliases = {"-r"}, usage = "write result automaton to this file",
 			metaVar = "<result file>")
 	private String resultFilePath = "ans.dot";
 
-	@Option(name = "--strategy", aliases = { "-sb" }, usage = "symmetry breaking strategy (0 - none, 1 - BFS, " +
+	@Option(name = "--strategy", aliases = {"-sb"}, usage = "symmetry breaking strategy (0 - none, 1 - BFS, " +
 			"2 - clique)", metaVar = "<SB strategy>")
 	private int SBStrategy = 1;
 
-	@Option(name = "--timeout", aliases = { "-t" }, usage = "timeout", metaVar = "<timeout>")
+	@Option(name = "--timeout", aliases = {"-t"}, usage = "timeout", metaVar = "<timeout>")
 	private int timeout = 300;
 
-	@Option(name = "--solver", aliases = { "-sat" }, usage = "external SAT solver. using sat4j by default",
+	@Option(name = "--solver", aliases = {"-sat"}, usage = "external SAT solver. using sat4j by default",
 			metaVar = "<SAT solver>")
 	private String externalSATSolver;
 
-	@Option(name = "--dimacs", aliases = { "-d" }, usage = "write dimacs file with CNF to this file",
+	@Option(name = "--dimacs", aliases = {"-d"}, usage = "write dimacs file with CNF to this file",
 			metaVar = "<dimacs file>")
 	private String dimacsFile = "dimacsFile.cnf";
 
-	@Option(name = "--log", aliases = { "-l" }, usage = "write log to this file", metaVar = "<log>")
+	@Option(name = "--log", aliases = {"-l"}, usage = "write log to this file", metaVar = "<log>")
 	private String logFile;
 
-	@Option(name = "--percent", aliases = { "-p" }, usage = "percent of noisy data", metaVar = "<noisy percent>")
+	@Option(name = "--percent", aliases = {"-p"}, usage = "percent of noisy data", metaVar = "<noisy percent>")
 	private int p = 0;
 
 	@Argument(usage = "dictionary file", metaVar = "<file>", required = true)

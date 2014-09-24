@@ -73,7 +73,7 @@ public class Node {
 	public Map<String, Node> getChildren() {
 		return children;
 	}
-	
+
 	public Node getChild(String s) {
 		return children.containsKey(s) ? children.get(s) : null;
 	}

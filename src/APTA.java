@@ -2,15 +2,11 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.StringTokenizer;
+import java.util.*;
 
 public class APTA {
 
-    private Node root;
+	private Node root;
 	private int size;
 	private int words;
 	private int alphaSize;
@@ -30,7 +26,7 @@ public class APTA {
 	}
 
 	public APTA(InputStream is) throws IOException {
-		try(BufferedReader br = new BufferedReader(new InputStreamReader(is))) {
+		try (BufferedReader br = new BufferedReader(new InputStreamReader(is))) {
 			size = 0;
 			acceptableNodes = new HashSet<>();
 			rejectableNodes = new HashSet<>();
@@ -86,7 +82,7 @@ public class APTA {
 	public int getSize() {
 		return size;
 	}
-	
+
 	public int getCountOfWords() {
 		return words;
 	}

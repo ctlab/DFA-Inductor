@@ -33,7 +33,7 @@ public class DictionaryGeneratorMain {
 	private int p = 0;
 
 	private static Logger logger = Logger.getLogger("Logger");
-	
+
 	private void launch(String... args) {
 		CmdLineParser parser = new CmdLineParser(this);
 		try {
@@ -141,7 +141,7 @@ public class DictionaryGeneratorMain {
 
 				int noisyWords = 0;
 				if (noisyMode) {
-					noisyWords = (int) ((double)(words / 100) * p);
+					noisyWords = (int) ((double) (words / 100) * p);
 				}
 
 				while (word < words) {
