@@ -22,9 +22,6 @@ public class APTA {
 	private boolean isNoisy;
 	private int colors;
 
-	StringTokenizer st;
-	BufferedReader br;
-
 	public APTA() {
 		acceptableNodes = new HashSet<>();
 		rejectableNodes = new HashSet<>();
@@ -36,49 +33,50 @@ public class APTA {
 	}
 
 	public APTA(InputStream is, boolean isNoisy) throws IOException {
-		br = new BufferedReader(new InputStreamReader(is));
-		size = 0;
-		acceptableNodes = new HashSet<>();
-		rejectableNodes = new HashSet<>();
-		indexesOfNodes = new HashMap<>();
-		alphabet = new HashSet<>();
-		this.isNoisy = isNoisy;
+		try(BufferedReader br = new BufferedReader(new InputStreamReader(is))) {
+			size = 0;
+			acceptableNodes = new HashSet<>();
+			rejectableNodes = new HashSet<>();
+			indexesOfNodes = new HashMap<>();
+			alphabet = new HashSet<>();
+			this.isNoisy = isNoisy;
 
-		int lines = nextInt();
-		words = lines;
-		int alphaSize = nextInt();
+			int lines = nextInt(br);
+			words = lines;
+			int alphaSize = nextInt(br);
 //		if (isNoisy) {
 //			colors = nextInt();
 //		}
-		this.alphaSize = alphaSize;
-		root = new Node(size);
-		indexesOfNodes.put(size++, root);
+			this.alphaSize = alphaSize;
+			root = new Node(size);
+			indexesOfNodes.put(size++, root);
 
-		Node currentNode;
-		Node newNode;
-		String label;
-		for (int line = 0; line < lines; line++) {
-			currentNode = root;
-			int status = nextInt();
-			int len = nextInt();
-			for (int i = 0; i < len; i++) {
-				label = nextToken();
-				alphabet.add(label);
-				if (currentNode.getChildren().containsKey(label)) {
-					currentNode = currentNode.getChildren().get(label);
-				} else {
-					newNode = new Node(size, label, currentNode);
-					indexesOfNodes.put(size++, newNode);
-					currentNode.addChild(label, newNode);
-					currentNode = newNode;
+			Node currentNode;
+			Node newNode;
+			String label;
+			for (int line = 0; line < lines; line++) {
+				currentNode = root;
+				int status = nextInt(br);
+				int len = nextInt(br);
+				for (int i = 0; i < len; i++) {
+					label = nextToken(br);
+					alphabet.add(label);
+					if (currentNode.getChildren().containsKey(label)) {
+						currentNode = currentNode.getChildren().get(label);
+					} else {
+						newNode = new Node(size, label, currentNode);
+						indexesOfNodes.put(size++, newNode);
+						currentNode.addChild(label, newNode);
+						currentNode = newNode;
+					}
 				}
-			}
-			if (status == 1) {
-				acceptableNodes.add(currentNode.getNumber());
-				currentNode.setStatus(Node.Status.ACCEPTABLE);
-			} else {
-				rejectableNodes.add(currentNode.getNumber());
-				currentNode.setStatus(Node.Status.REJECTABLE);
+				if (status == 1) {
+					acceptableNodes.add(currentNode.getNumber());
+					currentNode.setStatus(Node.Status.ACCEPTABLE);
+				} else {
+					rejectableNodes.add(currentNode.getNumber());
+					currentNode.setStatus(Node.Status.REJECTABLE);
+				}
 			}
 		}
 	}
@@ -136,7 +134,8 @@ public class APTA {
 		}
 	}
 
-	private String nextToken() throws IOException {
+	private String nextToken(BufferedReader br) throws IOException {
+		StringTokenizer st = null;
 		while (st == null || !st.hasMoreTokens()) {
 			String s = br.readLine();
 			if (s == null) {
@@ -147,7 +146,7 @@ public class APTA {
 		return st.nextToken();
 	}
 
-	private int nextInt() throws IOException {
-		return Integer.parseInt(nextToken());
+	private int nextInt(BufferedReader br) throws IOException {
+		return Integer.parseInt(nextToken(br));
 	}
 }
