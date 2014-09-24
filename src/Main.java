@@ -2,7 +2,6 @@ import org.kohsuke.args4j.Argument;
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
-import org.kohsuke.args4j.spi.BooleanOptionHandler;
 import org.sat4j.reader.ParseFormatException;
 import org.sat4j.specs.ContradictionException;
 import org.sat4j.specs.TimeoutException;
@@ -11,9 +10,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import java.util.Locale;
 import java.util.logging.FileHandler;
 import java.util.logging.Logger;
@@ -133,9 +129,9 @@ public class Main {
 					if (solver.problemIsSatisfiable()) {
 						logger.info("The automaton with " + colors + " colors was found! :)");
 						logger.info("Execution time: " + (System.currentTimeMillis() - startTime) / 1000.);
-						Automat automat = solver.getModel();
+						Automaton automaton = solver.getModel();
 						try (PrintWriter pw = new PrintWriter(resultFilePath)) {
-							pw.print(automat + "\n");
+							pw.print(automaton + "\n");
 						} catch (IOException e) {
 							logger.info("Problem with result file: " + e.getMessage());
 						}
@@ -150,7 +146,8 @@ public class Main {
 					logger.info("Execution time: " + (System.currentTimeMillis() - startTime) / 1000.);
 
 				} catch (TimeoutException e) {
-					logger.info("Timeout" + timeout + " seconds was reached");
+					logger.info("Timeout " + timeout + " seconds was reached");
+					logger.info("Execution time: " + timeout);
 				} catch (IOException e) {
 					logger.warning("Some problem with generating dimacs file: " + e.getMessage());
 					return;

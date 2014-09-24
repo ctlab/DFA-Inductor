@@ -120,7 +120,7 @@ public class SATSolver {
 	}
 
 	// must be called after problemIsSatisfiable
-	public Automat getModel() {
+	public Automaton getModel() {
 		int[][] x = new int[vertices][colors];
 		int curVar = 1;
 		for (int v = 0; v < vertices; v++) {
@@ -129,7 +129,7 @@ public class SATSolver {
 			}
 		}
 
-		Automat automat = new Automat(colors);
+		Automaton automaton = new Automaton(colors);
 		// map[vertex][color]
 		Map<Integer, Integer> colorsOfNodes = new HashMap<>();
 		int[] model;
@@ -156,19 +156,19 @@ public class SATSolver {
 			Node vertexNode = apta.getNode(vertex);
 
 			if (vertexNode.isAcceptable()) {
-				automat.getState(color).setStatus(Node.Status.ACCEPTABLE);
+				automaton.getState(color).setStatus(Node.Status.ACCEPTABLE);
 			} else if (vertexNode.isRejectable()) {
-				automat.getState(color).setStatus(Node.Status.REJECTABLE);
+				automaton.getState(color).setStatus(Node.Status.REJECTABLE);
 			}
 
 			for (Entry<String, Node> entry : apta.getNode(vertex).getChildren()
 					.entrySet()) {
 				String label = entry.getKey();
 				int to = entry.getValue().getNumber();
-				automat.addTransition(color, colorsOfNodes.get(to), label);
+				automaton.addTransition(color, colorsOfNodes.get(to), label);
 			}
 		}
-		return automat;
+		return automaton;
 	}
 
 	public int nVars() {
