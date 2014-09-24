@@ -144,7 +144,7 @@ public class DictionaryGeneratorMain {
 
 				int noisyWords = 0;
 				if (noisyMode) {
-					noisyWords = words / 100 * p;
+					noisyWords = (int) ((double)(words / 100) * p);
 				}
 
 				while (word < words) {
