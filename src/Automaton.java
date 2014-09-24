@@ -13,12 +13,6 @@ public class Automaton {
 	private Node start;
 	List<Node> states;
 
-	public Automaton() {
-		this.start = new Node(0);
-		this.states = new ArrayList<>();
-		this.states.add(start);
-	}
-
 	public Automaton(int size) {
 		int cur = 0;
 		this.start = new Node(cur++);
@@ -39,17 +33,14 @@ public class Automaton {
 			Pattern transitionPattern = Pattern.compile("\\s+(\\d+) -> (\\d+) \\[label = \\\"([a-zA-Z0-9-_])\\\"\\];");
 			Pattern acceptingPattern = Pattern.compile("\\s+(\\d+) \\[peripheries=2\\]");
 
-			String line = "";
+			String line;
 			Matcher matcher;
 			while ((line = automatonBR.readLine()) != null) {
 				if ((matcher = transitionPattern.matcher(line)).matches()) {
 					addTransition(Integer.parseInt(matcher.group(1)), Integer.parseInt(matcher.group(2)),
 							matcher.group(3));
-					continue;
-				}
-				if ((matcher = acceptingPattern.matcher(line)).matches()) {
+				} else if ((matcher = acceptingPattern.matcher(line)).matches()) {
 					getState(Integer.parseInt(matcher.group(1))).setStatus(Node.Status.ACCEPTABLE);
-					continue;
 				}
 			}
 			for (Node node : states) {
@@ -77,10 +68,10 @@ public class Automaton {
 	}
 
 	public void addTransition(int from, int to, String label) {
-		if (!states.contains(from)) {
+		if (from > states.size()) {
 			addState(from);
 		}
-		if (!states.contains(to)) {
+		if (to > states.size()) {
 			addState(to);
 		}
 		Node fromNode = states.get(from);
@@ -136,8 +127,8 @@ public class Automaton {
 	}
 
 	private boolean addState(int number) {
-		if (!states.contains(number)) {
-			int cur = states.size();
+		int cur = states.size();
+		if (cur < number) {
 			while (cur <= number) {
 				this.states.add(new Node(cur++));
 			}

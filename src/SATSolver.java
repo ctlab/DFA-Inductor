@@ -29,50 +29,50 @@ public class SATSolver {
 	private int countVars;
 	private int timeout = 0;
 
-	public SATSolver(APTA apta, ConsistencyGraph cg, int colors,
+	public SATSolver(APTA apta, int colors,
 			String dimacsFile) throws ContradictionException,
 			ParseFormatException, IOException {
-		init(apta, cg, colors, dimacsFile, null);
+		init(apta, colors, dimacsFile, null);
 	}
 
-	public SATSolver(APTA apta, ConsistencyGraph cg, int colors,
+	public SATSolver(APTA apta, int colors,
 			String dimacsFile, int timeout) throws ContradictionException,
 			ParseFormatException, IOException {
 	    this.timeout = timeout;
-		init(apta, cg, colors, dimacsFile, null);
+		init(apta, colors, dimacsFile, null);
 	}
 
-	public SATSolver(APTA apta, ConsistencyGraph cg, int colors,
+	public SATSolver(APTA apta, int colors,
 			String dimacsFile, String satSolverFile)
 			throws ContradictionException, ParseFormatException, IOException {
-		init(apta, cg, colors, dimacsFile, satSolverFile);
+		init(apta, colors, dimacsFile, satSolverFile);
 	}
 
-	public SATSolver(APTA apta, ConsistencyGraph cg, int colors,
+	public SATSolver(APTA apta, int colors,
 			String dimacsFile, int timeout, String satSolverFile)
 			throws ContradictionException, IOException {
-		init(apta, cg, colors, dimacsFile, satSolverFile);
+		init(apta, colors, dimacsFile, satSolverFile);
 		timeoutString = " -t " + timeout + " ";
 	}
 
-	private void init(APTA apta, ConsistencyGraph cg, int colors,
+	private void init(APTA apta, int colors,
 			String dimacsFile, String satSolverFile) throws IOException {
 		this.apta = apta;
 		this.vertices = apta.getSize();
 		this.dimacsFile = dimacsFile;
 		this.colors = colors;
 		this.satSolverFile = satSolverFile;
-		BufferedReader br = new BufferedReader(new FileReader(dimacsFile));
-		String line;
-		while ((line = br.readLine()) != null) {
-			if (line.startsWith("p cnf ")) {
-				String[] tmp = line.split(" ");
-				countVars = Integer.parseInt(tmp[2]);
-				countClauses = Integer.parseInt(tmp[3]);
-				break;
+		try(BufferedReader br = new BufferedReader(new FileReader(dimacsFile))) {
+			String line;
+			while ((line = br.readLine()) != null) {
+				if (line.startsWith("p cnf ")) {
+					String[] tmp = line.split(" ");
+					countVars = Integer.parseInt(tmp[2]);
+					countClauses = Integer.parseInt(tmp[3]);
+					break;
+				}
 			}
 		}
-		br.close();
 	}
 
 	private IProblem build() throws ContradictionException,
@@ -82,8 +82,7 @@ public class SATSolver {
 			solver.setTimeout(timeout);
 		}
 		Reader reader = new DimacsReader(solver);
-		IProblem problem = reader.parseInstance(dimacsFile);
-		return problem;
+		return problem = reader.parseInstance(dimacsFile);
 	}
 
 	public boolean problemIsSatisfiable() throws TimeoutException, IOException, ParseFormatException, ContradictionException {
@@ -96,25 +95,21 @@ public class SATSolver {
 					.start();
 			// Process process = Runtime.getRuntime().exec(
 			// satSolverFile + timeoutString + dimacsFile);
-			BufferedReader br = new BufferedReader(new InputStreamReader(
-					process.getInputStream()));
-			String line;
-			while ((line = br.readLine()) != null) {
-				if (line.equals("s SATISFIABLE")) {
-					ansLine = "";
+			try(BufferedReader br = new BufferedReader(new InputStreamReader(
+					process.getInputStream()))) {
+				String line;
+				while ((line = br.readLine()) != null) {
+					if (line.equals("s SATISFIABLE")) {
+						ansLine = "";
+					}
+					if (line.charAt(0) == 'v') {
+						ansLine += line.substring(2, line.length()) + " ";
+					}
+					if (line.contains("c time limit") && line.contains("reached")) {
+						throw new TimeoutException();
+					}
 				}
-				if (line.charAt(0) == 'v') {
-					ansLine += line.substring(2, line.length()) + " ";
-				}
-				if (line.contains("c time limit") && line.contains("reached")) {
-					throw new TimeoutException();
-				}
-			}
-			br.close();
-			if (ansLine != null) {
-				return true;
-			} else {
-				return false;
+				return ansLine != null;
 			}
 		}
 	}

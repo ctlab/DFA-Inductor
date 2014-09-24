@@ -50,11 +50,9 @@ public class Main {
 	private int p = 0;
 
 	@Argument(usage = "dictionary file", metaVar = "<file>", required = true)
-	private String file = new String();
+	private String file;
 
 	private static Logger logger = Logger.getLogger("Logger");
-
-	private boolean noisyMode;
 
 	private void launch(String... args) {
 		CmdLineParser parser = new CmdLineParser(this);
@@ -69,7 +67,7 @@ public class Main {
 			return;
 		}
 
-		noisyMode = p > 0 ? true : false;
+		boolean noisyMode = p > 0;
 		if (SBStrategy == 2 && noisyMode) {
 			System.err.println("You can't use CLIQUE symmetry breaking strategy during solving " +
 					"noisy DFA building problem");
@@ -91,12 +89,7 @@ public class Main {
 		try (InputStream is = new FileInputStream(file)) {
 			logger.info("Working with file \"" + file + "\" started");
 
-			APTA apta;
-			if (noisyMode) {
-				apta = new APTA(is, true);
-			} else {
-				apta = new APTA(is, false);
-			}
+			APTA apta = new APTA(is);
 			logger.info("APTA successfully builded");
 			//------------------------------------------------
 			logger.info("APTA size: " + apta.getSize());
@@ -119,7 +112,7 @@ public class Main {
 					new DimacsFileGenerator(apta, cg, colors, SBStrategy, p, dimacsFile).generateFile();
 					logger.info("SAT problem in dimacs format successfully generated");
 
-					SATSolver solver = new SATSolver(apta, cg, colors, dimacsFile, timeout, externalSATSolver);
+					SATSolver solver = new SATSolver(apta, colors, dimacsFile, timeout, externalSATSolver);
 					logger.info("SAT solver successfully initialized");
 
 					logger.info("Vars in the SAT problem: " + solver.nVars());

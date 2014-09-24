@@ -1,28 +1,23 @@
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
+import java.io.*;
 import java.util.*;
 import java.util.Map.Entry;
 
 public class DimacsFileGenerator {
 
 	enum SBStrategy {
-		WITHOUT_SB, BFS_SB, CLIQUE_SB;
+		WITHOUT_SB, BFS_SB, CLIQUE_SB
 	}
 
 	// Exception??
 
 	public SBStrategy getSBStrategyByNum(int num) {
 		switch (num) {
-		case 0:
-			return SBStrategy.WITHOUT_SB;
-		case 2:
-			return SBStrategy.CLIQUE_SB;
-		default:
-			return SBStrategy.BFS_SB;
+			case 0:
+				return SBStrategy.WITHOUT_SB;
+			case 2:
+				return SBStrategy.CLIQUE_SB;
+			default:
+				return SBStrategy.BFS_SB;
 		}
 	}
 
@@ -43,7 +38,6 @@ public class DimacsFileGenerator {
 	private List<Integer> f;
 	private String tmpFile = "tmp";
 	private String dimacsFile;
-	private int countClauses = 0;
 	private SBStrategy SB;
 	private int noisyP;
 	private int noisySize;
@@ -51,16 +45,16 @@ public class DimacsFileGenerator {
 	private Set<Integer> rejectableClique;
 	private int color = 0;
 	private List<Integer> ends;
-	
+
 
 	public DimacsFileGenerator(APTA apta, ConsistencyGraph cg, int colors,
-			int SB, int noisyP, String dimacsFile) throws IOException {
+	                           int SB, int noisyP, String dimacsFile) throws IOException {
 		init(apta, cg, colors, getSBStrategyByNum(SB), noisyP, dimacsFile);
 	}
 
 	@SuppressWarnings("unchecked")
 	private void init(APTA apta, ConsistencyGraph cg, int colors,
-			SBStrategy SB, int noisyP, String dimacsFile) throws IOException {
+	                  SBStrategy SB, int noisyP, String dimacsFile) throws IOException {
 		this.apta = apta;
 		this.cg = cg;
 		this.colors = colors;
@@ -172,7 +166,7 @@ public class DimacsFileGenerator {
 			ends.addAll(apta.getRejectableNodes());
 			Collections.sort(ends);
 
-			noisySize = (int) ((double)(ends.size() * noisyP) / 100);
+			noisySize = (int) ((double) (ends.size() * noisyP) / 100);
 
 			n = new ArrayList<>();
 			for (int i = 0; i < noisySize; i++) {
@@ -199,78 +193,73 @@ public class DimacsFileGenerator {
 	}
 
 	public String generateFile() throws IOException {
-
-		
 		File tmp = new File(tmpFile);
-		PrintWriter tmpPW = new PrintWriter(tmp);
-		Buffer buffer = new Buffer(tmpPW);
-		
-		PrintWriter pwDF = new PrintWriter(dimacsFile);
+		try (PrintWriter tmpPW = new PrintWriter(tmp)) {
+			Buffer buffer = new Buffer(tmpPW);
+			try (PrintWriter pwDF = new PrintWriter(dimacsFile)) {
 
-		printOneAtLeast(buffer);
-		printOneAtMost(buffer);
-		printParrentRelationIsSet(buffer);
-		printParrentRelationAtMostOneColor(buffer);
-		printParrentRelationAtLeastOneColor(buffer);
-		printParrentRelationForces(buffer);
+				printOneAtLeast(buffer);
+				printOneAtMost(buffer);
+				printParrentRelationIsSet(buffer);
+				printParrentRelationAtMostOneColor(buffer);
+				printParrentRelationAtLeastOneColor(buffer);
+				printParrentRelationForces(buffer);
 
-		if (SB == SBStrategy.BFS_SB) {
-			// root has 0 color
-			buffer.addClause(x[0][0]);
-			printSBPEdgeExist(buffer);
-			printSBPMinimalSymbol(buffer);
-			printSBPParent(buffer);
-			// printSBPChildrenOrder(buffer);
-			if (apta.getAlphaSize() == 2) {
-				printSBPOrderByChildrenSymbolForSizeTwo(buffer);
-			} else {
-				printSBPOrderByChildrenSymbol(buffer);
+				if (SB == SBStrategy.BFS_SB) {
+					//  root has 0 color
+					buffer.addClause(x[0][0]);
+					printSBPEdgeExist(buffer);
+					printSBPMinimalSymbol(buffer);
+					printSBPParent(buffer);
+					// printSBPChildrenOrder(buffer);
+					if (apta.getAlphaSize() == 2) {
+						printSBPOrderByChildrenSymbolForSizeTwo(buffer);
+					} else {
+						printSBPOrderByChildrenSymbol(buffer);
+					}
+					printSBPOrderInLayer(buffer);
+					printSBPParentExist(buffer);
+				}
+				if (SB == SBStrategy.CLIQUE_SB) {
+					printAcceptableCliqueSB(buffer);
+					printRejectableCliqueSB(buffer);
+				}
+
+				if (noisyP > 0) {
+//			        printOneAtLeastInNoisy(buffer);
+//			        printOneAtMostInNoisy(buffer);
+//			        printNoisyOrdered(buffer);
+					printNoisyNProxy(buffer);
+					printNoisyOneUnderOne(buffer);
+					printNoisyOrderingDiagonal(buffer);
+					printFProxy(buffer);
+					printAccVertDiffColorRejNoisy(buffer);
+
+				} else {
+					printAccVertDiffColorRej(buffer);
+					printConflictsFromCG(buffer);
+				}
+				int countClauses = buffer.nClauses();
+
+				pwDF.print("p cnf " + (maxVar - 1) + " " + countClauses + "\n");
+
+				try(BufferedReader in = new BufferedReader(new InputStreamReader(
+						new FileInputStream(tmp)))) {
+
+					String aLine;
+					while ((aLine = in.readLine()) != null) {
+						pwDF.print(aLine + "\n");
+					}
+					tmp.delete();
+				}
 			}
-			printSBPOrderInLayer(buffer);
-			printSBPParentExist(buffer);
+
 		}
-		if (SB == SBStrategy.CLIQUE_SB) {
-			printAcceptableCliqueSB(buffer);
-			printRejectableCliqueSB(buffer);
-		}
-
-		if (noisyP > 0) {
-//			printOneAtLeastInNoisy(buffer);
-//			printOneAtMostInNoisy(buffer);
-//			printNoisyOrdered(buffer);
-			printNoisyNProxy(buffer);
-			printNoisyOneUnderOne(buffer);
-			printNoisyOrderingDiagonal(buffer);
-			printFProxy(buffer);
-			printAccVertDiffColorRejNoisy(buffer);
-
-		} else {
-			printAccVertDiffColorRej(buffer);
-			printConflictsFromCG(buffer);
-		}
-		tmpPW.close();
-		countClauses = buffer.nClauses();
-
-		pwDF.print("p cnf " + (maxVar - 1) + " " + countClauses + "\n");
-
-		BufferedReader in = new BufferedReader(new InputStreamReader(
-				new FileInputStream(tmp)));
-
-		String aLine = null;
-		while ((aLine = in.readLine()) != null) {
-			pwDF.print(aLine + "\n");
-		}
-
-		in.close();
-		pwDF.close();
-
-		tmp.delete();
-
 		return dimacsFile;
 	}
 
 	private int findNeighbourWithHighestDegree(Set<Integer> cur, int v,
-			boolean acceptable) {
+	                                           boolean acceptable) {
 		int maxDegree = 0;
 		int maxNeighbour = -1;
 		// uv - edge
@@ -308,7 +297,7 @@ public class DimacsFileGenerator {
 		for (int v = 0; v < vertices; v++) {
 			StringBuilder sb = new StringBuilder();
 			for (int i = 0; i < colors; i++) {
-				sb.append(x[v][i] + " ");
+				sb.append(x[v][i]).append(" ");
 			}
 			buffer.addClause(sb);
 		}
@@ -381,7 +370,7 @@ public class DimacsFileGenerator {
 			for (int i = 0; i < colors; i++) {
 				StringBuilder sb = new StringBuilder();
 				for (int j = 0; j < colors; j++) {
-					sb.append(y[i][j].get(st) + " ");
+					sb.append(y[i][j].get(st)).append(" ");
 				}
 				buffer.addClause(sb);
 			}
@@ -433,7 +422,7 @@ public class DimacsFileGenerator {
 				StringBuilder tmp = new StringBuilder(-eij + " ");
 				for (String label : alphabet) {
 					buffer.addClause(eij, -y[i][j].get(label));
-					tmp.append(y[i][j].get(label) + " ");
+					tmp.append(y[i][j].get(label)).append(" ");
 				}
 				buffer.addClause(tmp);
 			}
@@ -455,12 +444,12 @@ public class DimacsFileGenerator {
 					StringBuilder tmp = new StringBuilder(curM + " " + -e[i][j]
 							+ " " + -y[i][j].get(label) + " ");
 					for (String prevLabel : alphabet) {
-						if (prevLabel == label) {
+						if (prevLabel.equals(label)) {
 							break;
 						}
 						buffer.addClause(-curM, -y[i][j].get(prevLabel));
 
-						tmp.append(y[i][j].get(prevLabel) + " ");
+						tmp.append(y[i][j].get(prevLabel)).append(" ");
 					}
 					buffer.addClause(tmp);
 				}
@@ -481,7 +470,7 @@ public class DimacsFileGenerator {
 				for (int k = 0; k < j; k++) {
 					buffer.addClause(-p[i][j], -e[k][i]);
 
-					tmp.append(e[k][i] + " ");
+					tmp.append(e[k][i]).append(" ");
 				}
 				buffer.addClause(tmp);
 			}
@@ -508,7 +497,7 @@ public class DimacsFileGenerator {
 			for (int j = 0; j < i; j++) {
 				for (String label : alphabet) {
 					for (String prevLabel : alphabet) {
-						if (label == prevLabel) {
+						if (label.equals(prevLabel)) {
 							break;
 						}
 						buffer.addClause(-p[i][j], -p[i + 1][j],
@@ -550,7 +539,7 @@ public class DimacsFileGenerator {
 		for (int i = 1; i < colors; i++) {
 			StringBuilder tmp = new StringBuilder();
 			for (int j = 0; j < i; j++) {
-				tmp.append(p[i][j] + " ");
+				tmp.append(p[i][j]).append(" ");
 			}
 			buffer.addClause(tmp);
 		}
@@ -670,7 +659,7 @@ public class DimacsFileGenerator {
 			StringBuilder tmp = new StringBuilder(-fv + " ");
 			for (int q = 0; q < noisySize; q++) {
 				buffer.addClause(fv, -n.get(q).get(v));
-				tmp.append(n.get(q).get(v) + " ");
+				tmp.append(n.get(q).get(v)).append(" ");
 			}
 			buffer.addClause(tmp);
 		}

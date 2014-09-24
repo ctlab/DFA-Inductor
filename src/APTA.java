@@ -13,14 +13,11 @@ public class APTA {
     private Node root;
 	private int size;
 	private int words;
-	@SuppressWarnings("unused")
 	private int alphaSize;
 	private Set<String> alphabet;
 	private Set<Integer> acceptableNodes;
 	private Set<Integer> rejectableNodes;
 	private Map<Integer, Node> indexesOfNodes;
-	private boolean isNoisy;
-	private int colors;
 
 	public APTA() {
 		acceptableNodes = new HashSet<>();
@@ -32,21 +29,17 @@ public class APTA {
 		indexesOfNodes.put(size++, root);
 	}
 
-	public APTA(InputStream is, boolean isNoisy) throws IOException {
+	public APTA(InputStream is) throws IOException {
 		try(BufferedReader br = new BufferedReader(new InputStreamReader(is))) {
 			size = 0;
 			acceptableNodes = new HashSet<>();
 			rejectableNodes = new HashSet<>();
 			indexesOfNodes = new HashMap<>();
 			alphabet = new HashSet<>();
-			this.isNoisy = isNoisy;
 
 			int lines = nextInt(br);
 			words = lines;
 			int alphaSize = nextInt(br);
-//		if (isNoisy) {
-//			colors = nextInt();
-//		}
 			this.alphaSize = alphaSize;
 			root = new Node(size);
 			indexesOfNodes.put(size++, root);
@@ -78,6 +71,7 @@ public class APTA {
 					currentNode.setStatus(Node.Status.REJECTABLE);
 				}
 			}
+			assert alphabet.size() == alphaSize;
 		}
 	}
 
@@ -98,7 +92,7 @@ public class APTA {
 	}
 
 	public int getAlphaSize() {
-		return alphabet.size();
+		return alphaSize;
 	}
 
 	public Node getRoot() {
@@ -120,18 +114,6 @@ public class APTA {
 	// node can be null
 	public Node getNode(int i) {
 		return indexesOfNodes.get(i);
-	}
-	
-	public boolean isNoisy() {
-		return isNoisy;
-	}
-	
-	public int getColors() {
-		if (isNoisy) {
-			return colors;
-		} else {
-			return -1;
-		}
 	}
 
 	private String nextToken(BufferedReader br) throws IOException {

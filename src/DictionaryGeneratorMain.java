@@ -1,7 +1,6 @@
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
-import org.kohsuke.args4j.spi.BooleanOptionHandler;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -35,8 +34,6 @@ public class DictionaryGeneratorMain {
 
 	private static Logger logger = Logger.getLogger("Logger");
 	
-	private boolean noisyMode;
-
 	private void launch(String... args) {
 		CmdLineParser parser = new CmdLineParser(this);
 		try {
@@ -50,7 +47,7 @@ public class DictionaryGeneratorMain {
 			return;
 		}
 
-		noisyMode = p > 0 ? true : false;
+		boolean noisyMode = p > 0;
 
 		if (logFile != null) {
 			try {

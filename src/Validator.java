@@ -31,8 +31,6 @@ public class Validator {
 
 	private static Logger logger = Logger.getLogger("Logger");
 
-	private boolean noisyMode;
-
 	private void launch(String... args) {
 		CmdLineParser parser = new CmdLineParser(this);
 		try {
@@ -45,8 +43,6 @@ public class Validator {
 			parser.printUsage(System.err);
 			return;
 		}
-
-		noisyMode = p > 0 ? true : false;
 
 		if (logFile != null) {
 			try {
