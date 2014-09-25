@@ -68,10 +68,10 @@ public class Automaton {
 	}
 
 	public void addTransition(int from, int to, String label) {
-		if (from > states.size()) {
+		if (from >= states.size()) {
 			addState(from);
 		}
-		if (to > states.size()) {
+		if (to >= states.size()) {
 			addState(to);
 		}
 		Node fromNode = states.get(from);
@@ -128,7 +128,7 @@ public class Automaton {
 
 	private boolean addState(int number) {
 		int cur = states.size();
-		if (cur < number) {
+		if (cur <= number) {
 			while (cur <= number) {
 				this.states.add(new Node(cur++));
 			}

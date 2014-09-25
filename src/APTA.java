@@ -15,6 +15,8 @@ public class APTA {
 	private Set<Integer> rejectableNodes;
 	private Map<Integer, Node> indexesOfNodes;
 
+	private StringTokenizer st = null;
+
 	public APTA() {
 		acceptableNodes = new HashSet<>();
 		rejectableNodes = new HashSet<>();
@@ -113,7 +115,6 @@ public class APTA {
 	}
 
 	private String nextToken(BufferedReader br) throws IOException {
-		StringTokenizer st = null;
 		while (st == null || !st.hasMoreTokens()) {
 			String s = br.readLine();
 			if (s == null) {

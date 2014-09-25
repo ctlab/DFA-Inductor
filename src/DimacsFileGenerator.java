@@ -242,7 +242,7 @@ public class DimacsFileGenerator {
 				int countClauses = buffer.nClauses();
 
 				pwDF.print("p cnf " + (maxVar - 1) + " " + countClauses + "\n");
-
+				tmpPW.flush();
 				try (BufferedReader in = new BufferedReader(new InputStreamReader(
 						new FileInputStream(tmp)))) {
 
