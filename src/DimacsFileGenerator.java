@@ -250,11 +250,10 @@ public class DimacsFileGenerator {
 					while ((aLine = in.readLine()) != null) {
 						pwDF.print(aLine + "\n");
 					}
-					tmp.delete();
 				}
 			}
-
 		}
+		tmp.delete();
 		return dimacsFile;
 	}
 
