@@ -9,6 +9,7 @@ import java.util.*;
 import java.util.logging.FileHandler;
 import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
+import java.util.prefs.Preferences;
 
 public class DictionaryGeneratorMain {
 
@@ -19,12 +20,9 @@ public class DictionaryGeneratorMain {
 			required = true)
 	private int words;
 
-	@Option(name = "--result", aliases = {"-r"}, usage = "write result automaton to these files <name>.nnn",
-			metaVar = "<result files>")
-	private String resultFilePath = "test";
-
-	@Option(name = "--filesCount", aliases = {"-fc"}, usage = "count of files", metaVar = "<files count>")
-	private int files = 1;
+	@Option(name = "--result", aliases = {"-r"}, usage = "write result automaton to this file",
+			metaVar = "<result file>")
+	private String resultFilePath = "test.dct";
 
 	@Option(name = "--log", aliases = {"-l"}, usage = "write log to this file", metaVar = "<log>")
 	private String logFile;
@@ -32,6 +30,7 @@ public class DictionaryGeneratorMain {
 	@Option(name = "--percent", aliases = {"-p"}, usage = "percent of noisy data", metaVar = "<noisy percent>")
 	private int p = 0;
 
+	private final static int ALPHABET_SIZE = 2;
 	private static Logger logger = Logger.getLogger("Logger");
 
 	private void launch(String... args) {
@@ -63,124 +62,104 @@ public class DictionaryGeneratorMain {
 		}
 
 		Random random = new Random();
-		for (int file = 1; file <= files; file++) {
-			String suffix = ".";
-			if (file < 10) {
-				suffix += "00" + file;
-			} else if (file < 100) {
-				suffix += "0" + file;
+		logger.info("Starting generating file " + resultFilePath);
+		Automaton automaton = new Automaton(size);
+		for (int number = 1; number < size; number++) {
+			int parentNum;
+			do {
+				parentNum = random.nextInt(number);
+			} while (automaton.getState(parentNum).getChild("0") != null &&
+					automaton.getState(parentNum).getChild("1") != null);
+			Node parentNode = automaton.getState(parentNum);
+			if (parentNode.getChild("0") != null) {
+				automaton.addTransition(parentNum, number, "1");
+				continue;
+			}
+			if (parentNode.getChild("1") != null) {
+				automaton.addTransition(parentNum, number, "0");
+				continue;
+			}
+			String label = random.nextInt(2) == 1 ? "1" : "0";
+			automaton.addTransition(parentNum, number, label);
+		}
+
+		for (int number = 0; number < size; number++) {
+			Node curNode = automaton.getState(number);
+
+			int toByZero = random.nextInt(size);
+			int toByOne = random.nextInt(size);
+			if (curNode.getChild("0") == null) {
+				automaton.addTransition(number, toByZero, "0");
+			}
+			if (curNode.getChild("1") == null) {
+				automaton.addTransition(number, toByOne, "1");
+			}
+
+			Node.Status status;
+			if (random.nextInt(2) == 1) {
+				status = Node.Status.ACCEPTABLE;
 			} else {
-				suffix += file;
+				status = Node.Status.REJECTABLE;
 			}
+			curNode.setStatus(status);
+		}
 
-			String fileName = resultFilePath + suffix;
-			logger.info("Starting generating file " + fileName);
+		logger.info("Generating words for: " + resultFilePath);
+		try (PrintWriter pw = new PrintWriter(new File(resultFilePath))) {
+			pw.println(words + " " + ALPHABET_SIZE);
 
-			List<Node> nodes = new ArrayList<>();
-			for (int number = 0; number < size; number++) {
-				nodes.add(new Node(number));
-			}
+			Set<String> wordsSet = new HashSet<>();
+			StringBuilder path;
+			Node curNode;
 
-			for (int number = 1; number < size; number++) {
-				Node curNode = nodes.get(number);
-				int parentNum;
-				do {
-					parentNum = random.nextInt(number);
-				} while (nodes.get(parentNum).getChild("0") != null && nodes.get(parentNum).getChild("1") != null);
-				Node parentNode = nodes.get(parentNum);
-				if (parentNode.getChild("0") != null) {
-					parentNode.addChild("1", curNode);
-					curNode.addParent("1", parentNode);
-					continue;
+			int WordsLessThenCurrentLengthCount = 2;
+			int length = 3;
+			int currentWordNumber = 0;
+
+			int noisyWords = 0;
+			int noisyWordsCount = noisyMode ? (int) ((double) (words / 100) * p) : 0;
+
+			while (currentWordNumber < words) {
+				if (currentWordNumber == WordsLessThenCurrentLengthCount) {
+					WordsLessThenCurrentLengthCount *= 2;
+					length++;
 				}
-				if (parentNode.getChild("1") != null) {
-					parentNode.addChild("0", curNode);
-					curNode.addParent("0", parentNode);
-					continue;
+				path = new StringBuilder();
+				curNode = automaton.getStart();
+				for (int letter = 0; letter < length; letter++) {
+					String label = random.nextInt(2) == 1 ? "1" : "0";
+					curNode = curNode.getChild(label);
+					path.append(label).append(" ");
 				}
-				String label = random.nextInt(2) == 1 ? "1" : "0";
-				parentNode.addChild(label, curNode);
-				curNode.addParent(label, parentNode);
-			}
-
-			for (int number = 0; number < size; number++) {
-				Node curNode = nodes.get(number);
-
-				int toByZero = random.nextInt(size);
-				int toByOne = random.nextInt(size);
-				if (curNode.getChild("0") == null) {
-					curNode.addChild("0", nodes.get(toByZero));
-					nodes.get(toByZero).addParent("0", curNode);
-				}
-				if (curNode.getChild("1") == null) {
-					curNode.addChild("1", nodes.get(toByOne));
-					nodes.get(toByOne).addParent("1", curNode);
-				}
-
-				Node.Status status;
-				if (random.nextInt(2) == 1) {
-					status = Node.Status.ACCEPTABLE;
+				if (curNode.isAcceptable()) {
+					path = new StringBuilder("1 ").append(length).append(" ").append(path);
 				} else {
-					status = Node.Status.REJECTABLE;
+					path = new StringBuilder("0 ").append(length).append(" ").append(path);
 				}
-				curNode.setStatus(status);
+				if (!wordsSet.contains(path.toString())) {
+					wordsSet.add(path.toString());
+					currentWordNumber++;
+				}
 			}
 
-			logger.info("Generating words for: " + fileName);
-			try (PrintWriter pw = new PrintWriter(new File(fileName))) {
-				pw.println(words + " " + 2);
-
-				Set<String> wordsSet = new HashSet<>();
-
-				String path;
-				Node curNode;
-
-				int count = 2;
-				int length = 3;
-				int word = 0;
-
-				int noisyWords = 0;
-				if (noisyMode) {
-					noisyWords = (int) ((double) (words / 100) * p);
+			List<String> wordsList = new ArrayList<>();
+			wordsList.addAll(wordsSet);
+			Collections.shuffle(wordsList);
+			for (String word : wordsList) {
+				if (noisyWords < noisyWordsCount) {
+					word = (word.charAt(0) == '1' ? "0" : "1") + word.substring(1);
+				} else {
+					break;
 				}
-
-				while (word < words) {
-					if (word == count) {
-						count *= 2;
-						length++;
-					}
-					path = "";
-					curNode = nodes.get(0);
-					for (int letter = 0; letter < length; letter++) {
-						String label = random.nextInt(2) == 1 ? "1" : "0";
-						curNode = curNode.getChild(label);
-						path += label + " ";
-					}
-					if (curNode.isAcceptable()) {
-						if (words < noisyWords) {
-							path = "0 " + length + " " + path;
-						} else {
-							path = "1 " + length + " " + path;
-						}
-					} else {
-						if (words < noisyWords) {
-							path = "1 " + length + " " + path;
-						} else {
-							path = "0 " + length + " " + path;
-						}
-					}
-					if (!wordsSet.contains(path)) {
-						wordsSet.add(path);
-						pw.println(path);
-						word++;
-					}
-				}
-			} catch (FileNotFoundException e) {
-				logger.info("Some problem with result file " + fileName + ": " + e.getMessage());
-				e.printStackTrace();
 			}
 
-
+			Collections.shuffle(wordsList);
+			for (String word : wordsList) {
+				pw.println(word);
+			}
+		} catch (FileNotFoundException e) {
+			logger.info("Some problem with result file " + resultFilePath + ": " + e.getMessage());
+			e.printStackTrace();
 		}
 	}
 
