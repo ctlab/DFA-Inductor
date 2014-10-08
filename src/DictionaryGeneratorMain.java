@@ -9,7 +9,6 @@ import java.util.*;
 import java.util.logging.FileHandler;
 import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
-import java.util.prefs.Preferences;
 
 public class DictionaryGeneratorMain {
 
@@ -30,7 +29,9 @@ public class DictionaryGeneratorMain {
 	@Option(name = "--percent", aliases = {"-p"}, usage = "percent of noisy data", metaVar = "<noisy percent>")
 	private int p = 0;
 
-	private final static int ALPHABET_SIZE = 2;
+	@Option(name = "--alphabet", aliases = {"-a"}, usage = "alphabet size", metaVar = "<alphabet size>")
+	private int alphabetSize = 2;
+
 	private static Logger logger = Logger.getLogger("Logger");
 
 	private void launch(String... args) {
@@ -68,31 +69,22 @@ public class DictionaryGeneratorMain {
 			int parentNum;
 			do {
 				parentNum = random.nextInt(number);
-			} while (automaton.getState(parentNum).getChild("0") != null &&
-					automaton.getState(parentNum).getChild("1") != null);
+			} while (!hasFreeEdge(automaton, parentNum));
 			Node parentNode = automaton.getState(parentNum);
-			if (parentNode.getChild("0") != null) {
-				automaton.addTransition(parentNum, number, "1");
-				continue;
-			}
-			if (parentNode.getChild("1") != null) {
-				automaton.addTransition(parentNum, number, "0");
-				continue;
-			}
-			String label = random.nextInt(2) == 1 ? "1" : "0";
-			automaton.addTransition(parentNum, number, label);
+			int label;
+			do {
+				label = random.nextInt(alphabetSize);
+			} while (parentNode.getChild(String.valueOf(label)) != null);
+			automaton.addTransition(parentNum, number, String.valueOf(label));
 		}
 
 		for (int number = 0; number < size; number++) {
 			Node curNode = automaton.getState(number);
 
-			int toByZero = random.nextInt(size);
-			int toByOne = random.nextInt(size);
-			if (curNode.getChild("0") == null) {
-				automaton.addTransition(number, toByZero, "0");
-			}
-			if (curNode.getChild("1") == null) {
-				automaton.addTransition(number, toByOne, "1");
+			for (int i = 0; i < alphabetSize; i++) {
+				if (curNode.getChild(String.valueOf(i)) == null) {
+					automaton.addTransition(number, random.nextInt(size), String.valueOf(i));
+				}
 			}
 
 			Node.Status status;
@@ -103,10 +95,10 @@ public class DictionaryGeneratorMain {
 			}
 			curNode.setStatus(status);
 		}
-
+		logger.info("Automaton succesfully generated: \n" + automaton.toString());
 		logger.info("Generating words for: " + resultFilePath);
 		try (PrintWriter pw = new PrintWriter(new File(resultFilePath))) {
-			pw.println(words + " " + ALPHABET_SIZE);
+			pw.println(words + " " + alphabetSize);
 
 			Set<String> wordsSet = new HashSet<>();
 			StringBuilder path;
@@ -117,7 +109,7 @@ public class DictionaryGeneratorMain {
 			int currentWordNumber = 0;
 
 			int noisyWords = 0;
-			int noisyWordsCount = noisyMode ? (int) ((double) (words / 100) * p) : 0;
+			int noisyWordsCount = noisyMode ? (int) Math.round((words / 100.0) * p) : 0;
 
 			while (currentWordNumber < words) {
 				if (currentWordNumber == WordsLessThenCurrentLengthCount) {
@@ -127,7 +119,7 @@ public class DictionaryGeneratorMain {
 				path = new StringBuilder();
 				curNode = automaton.getStart();
 				for (int letter = 0; letter < length; letter++) {
-					String label = random.nextInt(2) == 1 ? "1" : "0";
+					String label = String.valueOf(random.nextInt(alphabetSize));
 					curNode = curNode.getChild(label);
 					path.append(label).append(" ");
 				}
@@ -145,14 +137,20 @@ public class DictionaryGeneratorMain {
 			List<String> wordsList = new ArrayList<>();
 			wordsList.addAll(wordsSet);
 			Collections.shuffle(wordsList);
-			for (String word : wordsList) {
+			Set<String> changedWords = new HashSet<>();
+			Iterator<String> iter = wordsList.iterator();
+			while (iter.hasNext()) {
+				String word = iter.next();
 				if (noisyWords < noisyWordsCount) {
-					word = (word.charAt(0) == '1' ? "0" : "1") + word.substring(1);
+					changedWords.add(((word.charAt(0) == '1') ? "0" : "1") + word.substring(1));
+					noisyWords++;
+					iter.remove();
 				} else {
 					break;
 				}
 			}
 
+			wordsList.addAll(changedWords);
 			Collections.shuffle(wordsList);
 			for (String word : wordsList) {
 				pw.println(word);
@@ -161,6 +159,14 @@ public class DictionaryGeneratorMain {
 			logger.info("Some problem with result file " + resultFilePath + ": " + e.getMessage());
 			e.printStackTrace();
 		}
+	}
+
+	private boolean hasFreeEdge(Automaton automaton, int nodeNumber) {
+		boolean ans = false;
+		for (int i = 0; i < alphabetSize; i++) {
+			ans |= (automaton.getState(nodeNumber).getChild(String.valueOf(i)) == null);
+		}
+		return ans;
 	}
 
 	private void run(String... args) {
