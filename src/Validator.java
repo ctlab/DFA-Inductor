@@ -81,7 +81,7 @@ public class Validator {
 					}
 					mistakes++;
 				}
-				if (mistakes < mistakesMax) {
+				if (mistakes <= mistakesMax) {
 					logger.info("The automaton recognized dictionary correctly.");
 				} else {
 					logger.info("The automaton recognized dictionary INcorrectly");
