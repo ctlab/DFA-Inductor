@@ -166,7 +166,7 @@ public class DimacsFileGenerator {
 			ends.addAll(apta.getRejectableNodes());
 			Collections.sort(ends);
 
-			noisySize = (int) ((double) (ends.size() * noisyP) / 100);
+			noisySize = (int) Math.round((ends.size()  / 100.0) * noisyP);
 
 			n = new ArrayList<>();
 			for (int i = 0; i < noisySize; i++) {

@@ -65,7 +65,7 @@ public class Validator {
 				logger.info("Parsing dictionary file \"" + dictionaryPath + "\".");
 				int lines = Integer.parseInt(br.readLine().split("\\s+")[0]);
 				int mistakes = 0;
-				int mistakesMax = (int) ((double) (lines / 100 * p));
+				int mistakesMax = (int) Math.round((lines / 100.0) * p);
 
 				for (int line = 0; line < lines; line++) {
 					// <status> <len> [label ...]
