@@ -145,6 +145,17 @@ public class SATSolver {
 				}
 			}
 		}
+		if (colorsOfNodes.get(0) != 0) {
+			int changeColor = colorsOfNodes.get(0);
+			for (int v = 0; v < vertices; v++) {
+				if (colorsOfNodes.get(v) == changeColor) {
+					colorsOfNodes.put(v, 0);
+				} else if (colorsOfNodes.get(v) == 0) {
+					colorsOfNodes.put(v, changeColor);
+				}
+			}
+		}
+
 		for (Entry<Integer, Integer> e : colorsOfNodes.entrySet()) {
 			int vertex = e.getKey();
 			int color = e.getValue();
