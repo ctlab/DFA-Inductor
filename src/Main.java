@@ -81,7 +81,7 @@ public class Main {
 				logger.setUseParentHandlers(false);
 				System.out.println("Log file: " + logFile);
 			} catch (Exception e) {
-				System.err.println("Problem with log file: " + logFile + ". " + e.getMessage());
+				System.err.println("Problem with the log file: " + logFile + ". " + e.getMessage());
 				return;
 			}
 		}
@@ -90,19 +90,15 @@ public class Main {
 			logger.info("Working with file \"" + file + "\" started");
 
 			APTA apta = new APTA(is);
-			logger.info("APTA successfully builded");
-			//------------------------------------------------
+			logger.info("APTA was successfully built");
+
 			logger.info("APTA size: " + apta.getSize());
 			logger.info("Ends in APTA: " + (apta.getAcceptableNodes().size() + apta.getRejectableNodes().size()));
 			logger.info("Count of words: " + apta.getCountOfWords());
-			//-----------------------------------------------
 
-			ConsistencyGraph cg;
-			if (noisyMode) {
-				cg = new ConsistencyGraph();
-			} else {
-				cg = new ConsistencyGraph(apta);
-				logger.info("CG successfully builded");
+			ConsistencyGraph cg = new ConsistencyGraph(apta, noisyMode);
+			if (!noisyMode) {
+				logger.info("CG was successfully built");
 			}
 
 			for (int colors = minSize; colors <= maxSize; colors++) {

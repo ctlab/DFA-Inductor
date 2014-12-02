@@ -10,35 +10,31 @@ public class ConsistencyGraph {
 	Map<Integer, Triple> merged = new HashMap<>();
 	Map<Integer, Triple> mergedInit = new HashMap<>();
 
-	//empty cg
-	public ConsistencyGraph() {
-		this.apta = new APTA();
-		this.edges = new HashMap<>();
-	}
-
-	public ConsistencyGraph(APTA apta) {
+	public ConsistencyGraph(APTA apta, boolean noisyMode) {
 		edges = new HashMap<>();
 		this.apta = apta;
 
-		for (int i = 0; i < apta.getSize(); i++) {
-			edges.put(i, new HashSet<Integer>());
-		}
-		Set<Integer> acceptableNodes = apta.getAcceptableNodes();
-		Set<Integer> rejectableNodes = apta.getRejectableNodes();
-
-		for (int i : acceptableNodes) {
-			for (int j : rejectableNodes) {
-				edges.get(i).add(j);
-				edges.get(j).add(i);
+		if (!noisyMode) {
+			for (int i = 0; i < apta.getSize(); i++) {
+				edges.put(i, new HashSet<Integer>());
 			}
-		}
+			Set<Integer> acceptableNodes = apta.getAcceptableNodes();
+			Set<Integer> rejectableNodes = apta.getRejectableNodes();
 
-		for (int i = 0; i < apta.getSize(); i++) {
-			mergedInit.put(i,
-					new Triple(i, apta.isAcceptable(i), apta.isRejectable(i)));
-		}
+			for (int i : acceptableNodes) {
+				for (int j : rejectableNodes) {
+					edges.get(i).add(j);
+					edges.get(j).add(i);
+				}
+			}
 
-		findConsistentEdges(apta.getRoot());
+			for (int i = 0; i < apta.getSize(); i++) {
+				mergedInit.put(i,
+						new Triple(i, apta.isAcceptable(i), apta.isRejectable(i)));
+			}
+
+			findConsistentEdges(apta.getRoot());
+		}
 	}
 
 	public Map<Integer, Set<Integer>> getEdges() {

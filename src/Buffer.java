@@ -37,7 +37,7 @@ public class Buffer {
 
 	public void addClause(int... literals) {
 		for (int literal : literals) {
-			sb.append(literal + " ");
+			sb.append(literal).append(" ");
 		}
 		sb.append("0\n");
 		countClauses++;

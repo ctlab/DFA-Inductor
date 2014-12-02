@@ -89,13 +89,13 @@ public class DimacsFileGenerator {
 
 		if (SB == SBStrategy.BFS_SB) {
 			this.e = new int[colors][colors];
-			this.p = new int[colors][colors];
 			for (int i = 0; i < colors; i++) {
 				for (int j = i + 1; j < colors; j++) {
 					e[i][j] = maxVar++;
 				}
 			}
 
+			this.p = new int[colors][colors];
 			for (int i = 1; i < colors; i++) {
 				for (int j = 0; j < i; j++) {
 					p[i][j] = maxVar++;
@@ -166,7 +166,7 @@ public class DimacsFileGenerator {
 			ends.addAll(apta.getRejectableNodes());
 			Collections.sort(ends);
 
-			noisySize = (int) Math.round((ends.size()  / 100.0) * noisyP);
+			noisySize = (int) Math.round((ends.size() / 100.0) * noisyP);
 
 			n = new ArrayList<>();
 			for (int i = 0; i < noisySize; i++) {
@@ -270,7 +270,7 @@ public class DimacsFileGenerator {
 				continue;
 			}
 			boolean uInClique = true;
-			// check if other edges in cur connected with u
+			// check if other vertices in cur connected with u
 			for (int w : cur) {
 				if (w != v) {
 					if (!cg.getEdges().get(w).contains(u)) {
