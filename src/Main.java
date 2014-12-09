@@ -2,6 +2,7 @@ import org.kohsuke.args4j.Argument;
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
+import org.kohsuke.args4j.spi.BooleanOptionHandler;
 import org.sat4j.reader.ParseFormatException;
 import org.sat4j.specs.ContradictionException;
 import org.sat4j.specs.TimeoutException;
@@ -24,9 +25,9 @@ public class Main {
 	@Option(name = "--sizedown", aliases = {"-sd"}, usage = "minimum automaton size", metaVar = "<minimum size>")
 	private int minSize = 1;
 
-	@Option(name = "--result", aliases = {"-r"}, usage = "write result automaton to this file",
+	@Option(name = "--result", aliases = {"-r"}, usage = "write result automaton to this file with extension .dot",
 			metaVar = "<result file>")
-	private String resultFilePath = "ans.dot";
+	private String resultFilePath = "ans";
 
 	@Option(name = "--strategy", aliases = {"-sb"}, usage = "symmetry breaking strategy (0 - none, 1 - BFS, " +
 			"2 - clique)", metaVar = "<SB strategy>")
@@ -48,6 +49,10 @@ public class Main {
 
 	@Option(name = "--percent", aliases = {"-p"}, usage = "percent of noisy data", metaVar = "<noisy percent>")
 	private int p = 0;
+
+	@Option(name = "--all", aliases = {"-a"}, usage = "find all mode", metaVar = "<find all>",
+			handler = BooleanOptionHandler.class)
+	private boolean findAllMode;
 
 	@Argument(usage = "dictionary file", metaVar = "<file>", required = true)
 	private String file;
@@ -86,6 +91,8 @@ public class Main {
 			}
 		}
 
+		int curDFA = 1;
+
 		try (InputStream is = new FileInputStream(file)) {
 			logger.info("Working with file \"" + file + "\" started");
 
@@ -100,36 +107,57 @@ public class Main {
 			if (!noisyMode) {
 				logger.info("CG was successfully built");
 			}
-
-			for (int colors = minSize; colors <= maxSize; colors++) {
+			boolean found = false;
+			for (int colors = minSize; colors <= maxSize && !found; colors++) {
 				logger.info("Try to build automaton with " + colors + " colors");
 				long startTime = 0;
 				try {
-					new DimacsFileGenerator(apta, cg, colors, SBStrategy, p, dimacsFile).generateFile();
+					DimacsFileGenerator dfg = new DimacsFileGenerator(apta, cg, colors, SBStrategy, p, dimacsFile);
+					dfg.generateFile();
 					logger.info("SAT problem in dimacs format successfully generated");
+					do {
+						SATSolver solver = new SATSolver(apta, colors, dimacsFile, timeout, externalSATSolver);
+						logger.info("SAT solver successfully initialized");
 
-					SATSolver solver = new SATSolver(apta, colors, dimacsFile, timeout, externalSATSolver);
-					logger.info("SAT solver successfully initialized");
+						logger.info("Vars in the SAT problem: " + solver.nVars());
+						logger.info("Constraints in the SAT problem: " + solver.nConstraints());
 
-					logger.info("Vars in the SAT problem: " + solver.nVars());
-					logger.info("Constraints in the SAT problem: " + solver.nConstraints());
-
-					startTime = System.currentTimeMillis();
-					if (solver.problemIsSatisfiable()) {
-						logger.info("The automaton with " + colors + " colors was found! :)");
-						logger.info("Execution time: " + (System.currentTimeMillis() - startTime) / 1000.);
-						Automaton automaton = solver.getModel();
-						try (PrintWriter pw = new PrintWriter(resultFilePath)) {
-							pw.print(automaton + "\n");
-						} catch (IOException e) {
-							logger.info("Problem with result file: " + e.getMessage());
+						startTime = System.currentTimeMillis();
+						String DFAnumber = " ";
+						if (findAllMode) {
+							DFAnumber = " number " + String.valueOf(curDFA) + " ";
 						}
-						break;
-					} else {
-						logger.info("The automaton with " + colors + " colors wasn't found! :(");
-						logger.info("Execution time: " + (System.currentTimeMillis() - startTime) / 1000.);
-
-					}
+						if (solver.problemIsSatisfiable()) {
+							found = true;
+							logger.info("The automaton" + DFAnumber + "with " + colors + " colors was found! :)");
+							logger.info("Execution time: " + (System.currentTimeMillis() - startTime) / 1000.);
+							Automaton automaton = solver.getModel();
+							String fullResultFilePath = resultFilePath;
+							if (findAllMode) {
+								fullResultFilePath += fineNumber(curDFA);
+							}
+							fullResultFilePath += ".dot";
+							try (PrintWriter pw = new PrintWriter(fullResultFilePath)) {
+								pw.print(automaton + "\n");
+							} catch (IOException e) {
+								logger.info("Problem with result file: " + e.getMessage());
+							}
+							if (findAllMode) {
+								dfg.banSolution(automaton);
+								curDFA++;
+							} else {
+								break;
+							}
+						} else {
+							if (findAllMode && found) {
+								logger.info("No more automatons with " + colors + " colors were found! :(");
+							} else {
+								logger.info("The automaton with " + colors + " colors wasn't found! :(");
+							}
+							logger.info("Execution time: " + (System.currentTimeMillis() - startTime) / 1000.);
+							break;
+						}
+					} while (true);
 				} catch (ContradictionException e) {
 					logger.info("The automaton with " + colors + " colors wasn't found! :(");
 					logger.info("Execution time: " + (System.currentTimeMillis() - startTime) / 1000.);
@@ -149,6 +177,10 @@ public class Main {
 		} catch (IOException e) {
 			logger.warning("Some unexpected problem with file \"" + file + "\":" + e.getMessage());
 		}
+	}
+
+	private String fineNumber(int number) {
+		return (number < 10) ? "00" + number : number < 100 ? "0" + number : String.valueOf(number);
 	}
 
 	private void run(String... args) {

@@ -257,8 +257,36 @@ public class DimacsFileGenerator {
 		return dimacsFile;
 	}
 
-	private int findNeighbourWithHighestDegree(Set<Integer> cur, int v,
-	                                           boolean acceptable) {
+	public void banSolution(Automaton automaton) throws IOException {
+		List<String> cache = new ArrayList<>();
+		try (BufferedReader br = new BufferedReader(new FileReader(dimacsFile))) {
+			String line = br.readLine();
+			if (line.startsWith("p cnf")) {
+				String[] tmp = line.split("\\s+");
+				tmp[3] = String.valueOf(Integer.parseInt(tmp[3]) + 1) + "\n";
+				cache.add(tmp[0] + " " + tmp[1] + " " + tmp[2] + " " + tmp[3]);
+			} //else - throw ex
+			while ((line = br.readLine()) != null) {
+				cache.add(line);
+			}
+		}
+		try (PrintWriter pwDF = new PrintWriter(new BufferedWriter(new FileWriter(dimacsFile)))) {
+			for (String s : cache) {
+				pwDF.println(s);
+			}
+			Buffer buffer = new Buffer(pwDF);
+			StringBuilder sb = new StringBuilder();
+			for (Node state : automaton.getStates()) {
+				for (Entry<String, Node> e : state.getChildren().entrySet()) {
+					sb.append(-y[state.getNumber()][e.getValue().getNumber()].get(e.getKey())).append(" ");
+				}
+			}
+			buffer.addClause(sb);
+			buffer.flush();
+		}
+	}
+
+	private int findNeighbourWithHighestDegree(Set<Integer> cur, int v, boolean acceptable) {
 		int maxDegree = 0;
 		int maxNeighbour = -1;
 		// uv - edge
