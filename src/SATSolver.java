@@ -11,9 +11,6 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Map.Entry;
 
 public class SATSolver {
 
@@ -28,6 +25,7 @@ public class SATSolver {
 	private int countClauses;
 	private int countVars;
 	private int timeout = 0;
+	private boolean problemIsSatisfiableCalled = false;
 
 	public SATSolver(APTA apta, int colors,
 	                 String dimacsFile) throws ContradictionException,
@@ -86,6 +84,7 @@ public class SATSolver {
 	}
 
 	public boolean problemIsSatisfiable() throws TimeoutException, IOException, ParseFormatException, ContradictionException {
+		problemIsSatisfiableCalled = true;
 		if (satSolverFile == null) {
 			problem = build();
 			return problem.isSatisfiable();
@@ -115,18 +114,10 @@ public class SATSolver {
 	}
 
 	// must be called after problemIsSatisfiable
-	public Automaton getModel() {
-		int[][] x = new int[vertices][colors];
-		int curVar = 1;
-		for (int v = 0; v < vertices; v++) {
-			for (int i = 0; i < colors; i++) {
-				x[v][i] = curVar++;
-			}
+	public int[] getModel() throws Exception {
+		if (!problemIsSatisfiableCalled) {
+			throw new Exception("You should call problemIsSatisfiable first");
 		}
-
-		Automaton automaton = new Automaton(colors);
-		// map[vertex][color]
-		Map<Integer, Integer> colorsOfNodes = new HashMap<>();
 		int[] model;
 		if (satSolverFile == null) {
 			model = problem.model();
@@ -137,44 +128,7 @@ public class SATSolver {
 				model[i] = Integer.parseInt(strings[i]);
 			}
 		}
-
-		for (int i = 0; i < colors; i++) {
-			for (int v = 0; v < vertices; v++) {
-				if (model[x[v][i] - 1] > 0) {
-					colorsOfNodes.put(v, i);
-				}
-			}
-		}
-		if (colorsOfNodes.get(0) != 0) {
-			int changeColor = colorsOfNodes.get(0);
-			for (int v = 0; v < vertices; v++) {
-				if (colorsOfNodes.get(v) == changeColor) {
-					colorsOfNodes.put(v, 0);
-				} else if (colorsOfNodes.get(v) == 0) {
-					colorsOfNodes.put(v, changeColor);
-				}
-			}
-		}
-
-		for (Entry<Integer, Integer> e : colorsOfNodes.entrySet()) {
-			int vertex = e.getKey();
-			int color = e.getValue();
-			Node vertexNode = apta.getNode(vertex);
-
-			if (vertexNode.isAcceptable()) {
-				automaton.getState(color).setStatus(Node.Status.ACCEPTABLE);
-			} else if (vertexNode.isRejectable()) {
-				automaton.getState(color).setStatus(Node.Status.REJECTABLE);
-			}
-
-			for (Entry<String, Node> entry : apta.getNode(vertex).getChildren()
-					.entrySet()) {
-				String label = entry.getKey();
-				int to = entry.getValue().getNumber();
-				automaton.addTransition(color, colorsOfNodes.get(to), label);
-			}
-		}
-		return automaton;
+		return model;
 	}
 
 	public int nVars() {

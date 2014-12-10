@@ -286,6 +286,22 @@ public class DimacsFileGenerator {
 		}
 	}
 
+	public int[][] getX() {
+		return x;
+	}
+
+	public Map<Integer, Integer> getF() {
+		if (noisyP > 0) {
+			Map<Integer, Integer> ff = new HashMap<>();
+			for (int i = 0; i < ends.size(); i++) {
+				ff.put(ends.get(i), f.get(i));
+			}
+			return ff;
+		} else {
+			throw new NullPointerException("F is undefined in the noiseless mode.");
+		}
+	}
+
 	private int findNeighbourWithHighestDegree(Set<Integer> cur, int v, boolean acceptable) {
 		int maxDegree = 0;
 		int maxNeighbour = -1;
