@@ -200,10 +200,10 @@ public class DimacsFileGenerator {
 
 				printOneAtLeast(buffer);
 				printOneAtMost(buffer);
-				printParrentRelationIsSet(buffer);
-				printParrentRelationAtMostOneColor(buffer);
-				printParrentRelationAtLeastOneColor(buffer);
-				printParrentRelationForces(buffer);
+				printParentRelationIsSet(buffer);
+				printParentRelationAtMostOneColor(buffer);
+				printParentRelationAtLeastOneColor(buffer);
+				printParentRelationForces(buffer);
 
 				if (SB == SBStrategy.BFS_SB) {
 					//  root has 0 color
@@ -363,7 +363,7 @@ public class DimacsFileGenerator {
 
 	// A parent relation is set when a vertex and its parent are colored
 	// (y_{i,j,a} or !x_{p(v),i} or !x_{v,i})
-	private void printParrentRelationIsSet(Buffer buffer) {
+	private void printParentRelationIsSet(Buffer buffer) {
 		for (int v = 0; v < vertices; v++) {
 			for (int i = 0; i < colors; i++) {
 				for (int j = 0; j < colors; j++) {
@@ -380,7 +380,7 @@ public class DimacsFileGenerator {
 
 	// each parent relation can target at most one color
 	// (!y_{i,h,a} or !y_{i,j,a}) where a in Alphabet, h < j
-	private void printParrentRelationAtMostOneColor(Buffer buffer) {
+	private void printParentRelationAtMostOneColor(Buffer buffer) {
 		for (String st : apta.getAlphabet()) {
 			for (int i = 0; i < colors; i++) {
 				for (int j = 0; j < colors; j++) {
@@ -408,7 +408,7 @@ public class DimacsFileGenerator {
 
 	// each parent relation must target at least one color
 	//(y_{i,1,a} or ... or y_{i,|C|,a})
-	private void printParrentRelationAtLeastOneColor(Buffer buffer) {
+	private void printParentRelationAtLeastOneColor(Buffer buffer) {
 		for (String st : apta.getAlphabet()) {
 			for (int i = 0; i < colors; i++) {
 				StringBuilder sb = new StringBuilder();
@@ -423,7 +423,7 @@ public class DimacsFileGenerator {
 
 	// a parent relation forces a vertex once the parent is colored
 	// (!y_{i,j,l(v)} or !x_{p(v),i} or x_{v,i})
-	private void printParrentRelationForces(Buffer buffer) {
+	private void printParentRelationForces(Buffer buffer) {
 		for (int v = 0; v < vertices; v++) {
 			for (int i = 0; i < colors; i++) {
 				for (int j = 0; j < colors; j++) {
