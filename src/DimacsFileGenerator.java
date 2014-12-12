@@ -664,13 +664,16 @@ public class DimacsFileGenerator {
 	//n_{q,i} <=> o_{q,i} /\ ~o_{q,i+1}
 	private void printNoisyNProxy(Buffer buffer) {
 		for (int q = 0; q < noisySize; q++) {
-			for (int i = 0; i < n.get(q).size(); i++) {
-				buffer.addClause(n.get(q).get(i), -o.get(q).get(i), o.get(q).get(i + 1));
-				buffer.addClause(-n.get(q).get(i), o.get(q).get(i));
-				buffer.addClause(-n.get(q).get(i), -o.get(q).get(i + 1));
+			List<Integer> nq = n.get(q);
+			List<Integer> oq = o.get(q);
+			for (int i = 0; i < nq.size(); i++) {
+				int nqi = nq.get(i);
+				buffer.addClause(nqi, -oq.get(i), oq.get(i + 1));
+				buffer.addClause(-nqi, oq.get(i));
+				buffer.addClause(-nqi, -oq.get(i + 1));
 			}
-			buffer.addClause(o.get(q).get(0));
-			buffer.addClause(-o.get(q).get(ends.size()));
+			buffer.addClause(oq.get(0));
+			buffer.addClause(-oq.get(ends.size()));
 		}
 		buffer.flush();
 	}
@@ -678,8 +681,9 @@ public class DimacsFileGenerator {
 	//o_{q,i} => o_{q,i-1}
 	private void printNoisyOneUnderOne(Buffer buffer) {
 		for (int q = 0; q < noisySize; q++) {
-			for (int i = 1; i < o.get(q).size(); i++) {
-				buffer.addClause(-o.get(q).get(i), o.get(q).get(i - 1));
+			List<Integer> oq = o.get(q);
+			for (int i = 1; i < oq.size(); i++) {
+				buffer.addClause(-oq.get(i), oq.get(i - 1));
 			}
 		}
 		buffer.flush();
@@ -701,8 +705,9 @@ public class DimacsFileGenerator {
 			int fv = f.get(v);
 			StringBuilder tmp = new StringBuilder(-fv + " ");
 			for (int q = 0; q < noisySize; q++) {
-				buffer.addClause(fv, -n.get(q).get(v));
-				tmp.append(n.get(q).get(v)).append(" ");
+				int nqv = n.get(q).get(v);
+				buffer.addClause(fv, -nqv);
+				tmp.append(nqv).append(" ");
 			}
 			buffer.addClause(tmp);
 		}
