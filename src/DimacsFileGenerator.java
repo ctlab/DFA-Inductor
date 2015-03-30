@@ -5,7 +5,7 @@ import java.util.Map.Entry;
 public class DimacsFileGenerator {
 
 	enum SBStrategy {
-		WITHOUT_SB, BFS_SB, CLIQUE_SB
+		WITHOUT_SB, BFS_SB, DFS_SB, CLIQUE_SB
 	}
 
 	// Exception??
@@ -14,7 +14,11 @@ public class DimacsFileGenerator {
 		switch (num) {
 			case 0:
 				return SBStrategy.WITHOUT_SB;
+			case 1:
+				return SBStrategy.BFS_SB;
 			case 2:
+				return SBStrategy.DFS_SB;
+			case 3:
 				return SBStrategy.CLIQUE_SB;
 			default:
 				return SBStrategy.BFS_SB;
@@ -87,7 +91,7 @@ public class DimacsFileGenerator {
 			}
 		}
 
-		if (SB == SBStrategy.BFS_SB) {
+		if (SB == SBStrategy.BFS_SB || SB == SBStrategy.DFS_SB) {
 			this.e = new int[colors][colors];
 			for (int i = 0; i < colors; i++) {
 				for (int j = i + 1; j < colors; j++) {
@@ -205,20 +209,30 @@ public class DimacsFileGenerator {
 				printParentRelationAtLeastOneColor(buffer);
 				printParentRelationForces(buffer);
 
-				if (SB == SBStrategy.BFS_SB) {
+				if (SB == SBStrategy.BFS_SB || SB == SBStrategy.DFS_SB) {
 					//  root has 0 color
 					buffer.addClause(x[0][0]);
 					printSBPEdgeExist(buffer);
 					printSBPMinimalSymbol(buffer);
 					printSBPParent(buffer);
 					// printSBPChildrenOrder(buffer);
-					if (apta.getAlphaSize() == 2) {
-						printSBPOrderByChildrenSymbolForSizeTwo(buffer);
-					} else {
-						printSBPOrderByChildrenSymbol(buffer);
-					}
-					printSBPOrderInLayer(buffer);
+
 					printSBPParentExist(buffer);
+					if (SB == SBStrategy.BFS_SB) {
+						printSBPOrderInLayerBFS(buffer);
+						if (apta.getAlphaSize() == 2) {
+							printSBPOrderByChildrenSymbolForSizeTwoBFS(buffer);
+						} else {
+							printSBPOrderByChildrenSymbolBFS(buffer);
+						}
+					} else {
+						printSBPSubtreeNotIntersectDFS(buffer);
+						if (apta.getAlphaSize() == 2) {
+							printSBPOrderByChildrenSymbolForSizeTwoDFS(buffer);
+						} else {
+							printSBPOrderByChildrenSymbolDFS(buffer);
+						}
+					}
 				}
 				if (SB == SBStrategy.CLIQUE_SB) {
 					printAcceptableCliqueSB(buffer);
@@ -533,9 +547,9 @@ public class DimacsFileGenerator {
 //		buffer.flush();
 //	}
 
-	// if alphabet size greater then 2
+	// if alphabet size greater then 2 BFS
 	// p_{i,j} and p_{i+1,j} and m_{j,i,c_k} => !m_{j,i+1,c_(k-q)}
-	private void printSBPOrderByChildrenSymbol(Buffer buffer) {
+	private void printSBPOrderByChildrenSymbolBFS(Buffer buffer) {
 		for (int i = 1; i < colors - 1; i++) {
 			for (int j = 0; j < i; j++) {
 				for (String label : alphabet) {
@@ -553,9 +567,31 @@ public class DimacsFileGenerator {
 		buffer.flush();
 	}
 
-	// if alphabet size equal to 2
-	// p_{i,j} and p_{i+1,j} => y_{j, i, 0} and y_{j, i + 1, 1}
-	private void printSBPOrderByChildrenSymbolForSizeTwo(Buffer buffer) {
+	// if alphabet size greater then 2 DFS
+	// p_{i,j} and p_{i+t,j} and m_{j,i,c_k} => !m_{j,i+t,c_(k-q)}
+	private void printSBPOrderByChildrenSymbolDFS(Buffer buffer) {
+		for (int i = 1; i < colors - 1; i++) {
+			for (int j = 0; j < i; j++) {
+				for (int s = i + 1; s < colors; s++) {
+					for (String label : alphabet) {
+						for (String prevLabel : alphabet) {
+							if (label.equals(prevLabel)) {
+								break;
+							}
+							buffer.addClause(-p[i][j], -p[s][j],
+									-m[j][i].get(label),
+									-m[j][s].get(prevLabel));
+						}
+					}
+				}
+			}
+		}
+		buffer.flush();
+	}
+
+	// if alphabet size equal to 2 BFS
+	// p_{i,j} and p_{i+1,j} => y_{j,i,0} and y_{j,i+1,1}
+	private void printSBPOrderByChildrenSymbolForSizeTwoBFS(Buffer buffer) {
 		for (int i = 1; i < colors - 1; i++) {
 			for (int j = 0; j < i; j++) {
 				buffer.addClause(-p[i][j], -p[i + 1][j], y[j][i].get("0"));
@@ -565,8 +601,22 @@ public class DimacsFileGenerator {
 		buffer.flush();
 	}
 
+	// if alphabet size equal to 2 DFS
+	// p_{i,j} and p_{i+q,j} => y_{j,i,0} and y_{j,i+q,1}
+	private void printSBPOrderByChildrenSymbolForSizeTwoDFS(Buffer buffer) {
+		for (int i = 1; i < colors - 1; i++) {
+			for (int j = 0; j < i; j++) {
+				for (int s = i + 1; s < colors; s++) {
+					buffer.addClause(-p[i][j], -p[s][j], y[j][i].get("0"));
+					buffer.addClause(-p[i][j], -p[s][j], y[j][s].get("1"));
+				}
+			}
+		}
+		buffer.flush();
+	}
+
 	// p_{i,j} => !p_{i+1,j-q}
-	private void printSBPOrderInLayer(Buffer buffer) {
+	private void printSBPOrderInLayerBFS(Buffer buffer) {
 		for (int i = 1; i < colors - 1; i++) {
 			for (int j = 0; j < i; j++) {
 				for (int k = 0; k < j; k++) {
@@ -577,7 +627,21 @@ public class DimacsFileGenerator {
 		buffer.flush();
 	}
 
-	// p_{i,j} or ... or p_{i,i-1}
+	// p_{i,j} => !p_{i+k,j-q}
+	private void printSBPSubtreeNotIntersectDFS(Buffer buffer) {
+		for (int i = 1; i < colors - 1; i++) {
+			for (int j = 0; j < i; j++) {
+				for (int t = j + 1; t < i; t++) {
+					for (int s = i + 1; s < colors; s++) {
+						buffer.addClause(-p[i][j], -p[s][t]);
+					}
+				}
+			}
+		}
+		buffer.flush();
+	}
+
+	// p_{i,1} or ... or p_{i,i-1}
 	private void printSBPParentExist(Buffer buffer) {
 		for (int i = 1; i < colors; i++) {
 			StringBuilder tmp = new StringBuilder();

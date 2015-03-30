@@ -30,7 +30,7 @@ public class Main {
 	private String resultFilePath = "ans";
 
 	@Option(name = "--strategy", aliases = {"-sb"}, usage = "symmetry breaking strategy (0 - none, 1 - BFS, " +
-			"2 - clique)", metaVar = "<SB strategy>")
+			"2 - DFS" + "3 - clique)", metaVar = "<SB strategy>")
 	private int SBStrategy = 1;
 
 	@Option(name = "--timeout", aliases = {"-t"}, usage = "timeout", metaVar = "<timeout>")
@@ -77,7 +77,7 @@ public class Main {
 
 		boolean noisyMode = p > 0;
 		findAllMode |= findCount > 0;
-		if (SBStrategy == 2 && noisyMode) {
+		if (SBStrategy == 3 && noisyMode) {
 			System.err.println("You can't use CLIQUE symmetry breaking strategy during solving " +
 					"noisy DFA building problem");
 		}
