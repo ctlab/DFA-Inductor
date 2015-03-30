@@ -50,9 +50,12 @@ public class Main {
 	@Option(name = "--percent", aliases = {"-p"}, usage = "percent of noisy data", metaVar = "<noisy percent>")
 	private int p = 0;
 
-	@Option(name = "--all", aliases = {"-a"}, usage = "find all mode", metaVar = "<find all>",
+	@Option(name = "--findall", aliases = {"-a"}, usage = "find all mode", metaVar = "<find all>",
 			handler = BooleanOptionHandler.class)
 	private boolean findAllMode;
+
+	@Option(name = "--find", aliases = {"-f"}, usage = "find COUNT or less", metaVar = "find")
+	private int findCount = 0;
 
 	@Argument(usage = "dictionary file", metaVar = "<file>", required = true)
 	private String file;
@@ -73,6 +76,7 @@ public class Main {
 		}
 
 		boolean noisyMode = p > 0;
+		findAllMode |= findCount > 0;
 		if (SBStrategy == 2 && noisyMode) {
 			System.err.println("You can't use CLIQUE symmetry breaking strategy during solving " +
 					"noisy DFA building problem");
@@ -151,6 +155,9 @@ public class Main {
 							if (findAllMode) {
 								dfg.banSolution(automaton);
 								curDFA++;
+								if (curDFA > findCount) {
+									break;
+								}
 							} else {
 								break;
 							}
