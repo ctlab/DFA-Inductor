@@ -6,3 +6,16 @@
 | 6  |   2   |380.279|288.813|TL      | 100    |  100   |     0  |
 | 7  |   1   |837.995|512.56 |TL      |  92    |   98   |     0  |
 
+*DFA* - Deterministic Finite Automat  
+*SBP* - Symmetry Breaking Predicates  
+*TL* - Time Limit  
+
+
+**size** - size of a target DFA  
+**percent** - maximum % of noise in an input  
+**d_avg** - average time of unsat using DFS-based SBP  
+**b_avg** - average time of unsat using BFS-based SBP  
+**w_avg** - average time of unsat without using any SBP  
+**d_passed** - percent of successfuly passed tests under TL using DFS-based SBP  
+**b_passed** - percent of successfuly passed tests under TL using BFS-based SBP  
+**w_passed** - percent of successfuly passed tests under TL without using any SBP  
