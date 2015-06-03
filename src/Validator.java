@@ -6,10 +6,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Locale;
+import java.util.*;
 import java.util.logging.FileHandler;
 import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
@@ -28,6 +25,12 @@ public class Validator {
 
 	@Option(name = "--log", aliases = {"-l"}, usage = "write log to this file", metaVar = "<log>")
 	private String logFile;
+
+	@Option(name = "--bfs", usage = "check for BFS-enumeration", metaVar = "<bfs>")
+	private boolean bfsMode;
+
+	@Option(name = "--dfs", usage = "check for DFS-enumeration", forbids = {"--bfs"}, metaVar = "<dfs>")
+	private boolean dfsMode;
 
 	private static Logger logger = Logger.getLogger("Logger");
 
@@ -56,6 +59,7 @@ public class Validator {
 				return;
 			}
 		}
+
 
 		try {
 			logger.info("Building automaton from file \"" + automatonPath + "\".");
@@ -90,9 +94,47 @@ public class Validator {
 			} catch (IOException e) {
 				logger.warning("Some unexpected problem with file \"" + dictionaryPath + "\":" + e.getMessage());
 			}
+
+			if (bfsMode) {
+				logger.info("Checking for BFS-enumeration started.");
+				if (bfsCheck(automaton)) {
+					logger.info("The automaton is BFS-enumerated! Congrats :)");
+				} else {
+					logger.warning("The automaton is not BFS-enumerated! Too sad :(");
+				}
+			}
+//			if (dfsMode) {
+//				dfsCheck(automaton);
+//			}
 		} catch (IOException e) {
 			logger.warning("Some unexpected problem with file \"" + automatonPath + "\":" + e.getMessage());
 		}
+	}
+
+	private boolean bfsCheck(Automaton automaton) {
+		Queue<Node> queue = new LinkedList<>();
+		boolean[] visited = new boolean[automaton.size()];
+		List<String> alphabet = new ArrayList<>(automaton.getStart().getChildren().keySet());
+		Collections.sort(alphabet);
+		int num = 0;
+
+		queue.add(automaton.getStart());
+		visited[automaton.getStart().getNumber()] = true;
+		Node cur;
+		while (!queue.isEmpty()) {
+			cur = queue.remove();
+			if (cur.getNumber() != num++) {
+				return false;
+			}
+			for (String label : alphabet) {
+				Node child = cur.getChild(label);
+				if (!visited[child.getNumber()]) {
+					visited[child.getNumber()] = true;
+					queue.add(child);
+				}
+			}
+		}
+		return true;
 	}
 
 	private void run(String... args) {
