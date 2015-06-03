@@ -64,6 +64,7 @@ public class Validator {
 		try {
 			logger.info("Building automaton from file \"" + automatonPath + "\".");
 			Automaton automaton = new Automaton(new File(automatonPath));
+			boolean correct = false;
 
 			try (BufferedReader br = new BufferedReader(new FileReader(dictionaryPath))) {
 				logger.info("Parsing dictionary file \"" + dictionaryPath + "\".");
@@ -86,8 +87,10 @@ public class Validator {
 					mistakes++;
 				}
 				if (mistakes <= mistakesMax) {
+					correct = true;
 					logger.info("The automaton recognized dictionary correctly.");
 				} else {
+					correct = false;
 					logger.info("The automaton recognized dictionary INcorrectly");
 				}
 				logger.info("Mistakes found: " + mistakes + ". Mistakes allowed: " + mistakesMax + ".");
@@ -95,17 +98,24 @@ public class Validator {
 				logger.warning("Some unexpected problem with file \"" + dictionaryPath + "\":" + e.getMessage());
 			}
 
-			if (bfsMode) {
-				logger.info("Checking for BFS-enumeration started.");
-				if (bfsCheck(automaton)) {
-					logger.info("The automaton is BFS-enumerated! Congrats :)");
-				} else {
-					logger.warning("The automaton is not BFS-enumerated! Too sad :(");
+			if (correct) {
+				if (bfsMode) {
+					logger.info("Checking for BFS-enumeration started.");
+					if (bfsCheck(automaton)) {
+						logger.info("The automaton is BFS-enumerated! Congrats :)");
+					} else {
+						logger.warning("The automaton is not BFS-enumerated! Too sad :(");
+					}
+				}
+				if (dfsMode) {
+					logger.info("Checking for DFS-enumeration started.");
+					if (bfsCheck(automaton)) {
+						logger.info("The automaton is DFS-enumerated! Congrats :)");
+					} else {
+						logger.warning("The automaton is not DFS-enumerated! Too sad :(");
+					}
 				}
 			}
-//			if (dfsMode) {
-//				dfsCheck(automaton);
-//			}
 		} catch (IOException e) {
 			logger.warning("Some unexpected problem with file \"" + automatonPath + "\":" + e.getMessage());
 		}
@@ -135,6 +145,31 @@ public class Validator {
 			}
 		}
 		return true;
+	}
+
+	private boolean dfsCheck(Automaton automaton) {
+		boolean[] visited = new boolean[automaton.size()];
+		List<String> alphabet = new ArrayList<>(automaton.getStart().getChildren().keySet());
+		Collections.sort(alphabet);
+		int num = 0;
+
+		return dfsCheckRec(automaton.getStart(), visited, alphabet, num);
+	}
+
+	private boolean dfsCheckRec(Node cur, boolean[] visited, List<String> alphabet, int expected) {
+		visited[cur.getNumber()] = true;
+		boolean res = true;
+
+		if (cur.getNumber() != expected++) {
+			return false;
+		}
+		for (String label : alphabet) {
+			Node child = cur.getChild(label);
+			if (!visited[child.getNumber()]) {
+				res &= dfsCheckRec(child, visited, alphabet, expected);
+			}
+		}
+		return res;
 	}
 
 	private void run(String... args) {
