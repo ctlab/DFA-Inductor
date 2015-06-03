@@ -9,6 +9,8 @@ public class ConsistencyGraph {
 	private APTA apta;
 	Map<Integer, Triple> merged = new HashMap<>();
 	Map<Integer, Triple> mergedInit = new HashMap<>();
+	private Set<Integer> acceptableClique;
+	private Set<Integer> rejectableClique;
 
 	public ConsistencyGraph(APTA apta, boolean noisyMode) {
 		edges = new HashMap<>();
@@ -141,6 +143,97 @@ public class ConsistencyGraph {
 			this.isAcc = isAcc;
 			this.isRej = isRej;
 		}
+	}
 
+	public void findClique() {
+		int maxDegree = 0;
+		int maxV = -1;
+		acceptableClique = new HashSet<>();
+		for (int candidate : apta.getAcceptableNodes()) {
+			int candidateDegree = getEdges().get(candidate).size();
+			if (candidateDegree > maxDegree) {
+				maxDegree = candidateDegree;
+				maxV = candidate;
+			}
+		}
+		int last = maxV;
+		if (last != -1) {
+			acceptableClique.add(last);
+			int anotherOne = findNeighbourWithHighestDegree(
+					acceptableClique, last, true);
+			while (anotherOne != -1) {
+				acceptableClique.add(anotherOne);
+				last = anotherOne;
+				anotherOne = findNeighbourWithHighestDegree(
+						acceptableClique, last, true);
+			}
+		}
+
+		maxDegree = 0;
+		maxV = -1;
+		rejectableClique = new HashSet<>();
+		for (int candidate : apta.getRejectableNodes()) {
+			int candidateDegree = getEdges().get(candidate).size();
+			if (candidateDegree > maxDegree) {
+				maxDegree = candidateDegree;
+				maxV = candidate;
+			}
+		}
+		last = maxV;
+		if (last != -1) {
+			rejectableClique.add(last);
+			int anotherOne = findNeighbourWithHighestDegree(
+					rejectableClique, last, false);
+			while (anotherOne != -1) {
+				rejectableClique.add(anotherOne);
+				last = anotherOne;
+				anotherOne = findNeighbourWithHighestDegree(
+						rejectableClique, last, false);
+			}
+		}
+	}
+
+	private int findNeighbourWithHighestDegree(Set<Integer> cur, int v, boolean acceptable) {
+		int maxDegree = 0;
+		int maxNeighbour = -1;
+		// uv - edge
+		for (int u : getEdges().get(v)) {
+			if (acceptable && !apta.isAcceptable(u)) {
+				continue;
+			}
+			if (!acceptable && !apta.isRejectable(u)) {
+				continue;
+			}
+			boolean uInClique = true;
+			// check if other vertices in cur connected with u
+			for (int w : cur) {
+				if (w != v) {
+					if (!getEdges().get(w).contains(u)) {
+						uInClique = false;
+						break;
+					}
+				}
+			}
+			if (uInClique) {
+				int uDegree = getEdges().get(u).size();
+				if (uDegree > maxDegree) {
+					maxDegree = uDegree;
+					maxNeighbour = u;
+				}
+			}
+		}
+		return maxNeighbour;
+	}
+
+	public Set<Integer> getAcceptableClique() {
+		return acceptableClique;
+	}
+
+	public Set<Integer> getRejectableClique() {
+		return rejectableClique;
+	}
+
+	public int getCliqueSize() {
+		return acceptableClique.size() + rejectableClique.size();
 	}
 }

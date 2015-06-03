@@ -118,51 +118,8 @@ public class DimacsFileGenerator {
 		}
 
 		if (SB == SBStrategy.CLIQUE_SB) {
-			int maxDegree = 0;
-			int maxV = -1;
-			acceptableClique = new HashSet<>();
-			for (int candidate : apta.getAcceptableNodes()) {
-				int candidateDegree = cg.getEdges().get(candidate).size();
-				if (candidateDegree > maxDegree) {
-					maxDegree = candidateDegree;
-					maxV = candidate;
-				}
-			}
-			int last = maxV;
-			if (last != -1) {
-				acceptableClique.add(last);
-				int anotherOne = findNeighbourWithHighestDegree(
-						acceptableClique, last, true);
-				while (anotherOne != -1) {
-					acceptableClique.add(anotherOne);
-					last = anotherOne;
-					anotherOne = findNeighbourWithHighestDegree(
-							acceptableClique, last, true);
-				}
-			}
-
-			maxDegree = 0;
-			maxV = -1;
-			rejectableClique = new HashSet<>();
-			for (int candidate : apta.getRejectableNodes()) {
-				int candidateDegree = cg.getEdges().get(candidate).size();
-				if (candidateDegree > maxDegree) {
-					maxDegree = candidateDegree;
-					maxV = candidate;
-				}
-			}
-			last = maxV;
-			if (last != -1) {
-				rejectableClique.add(last);
-				int anotherOne = findNeighbourWithHighestDegree(
-						rejectableClique, last, false);
-				while (anotherOne != -1) {
-					rejectableClique.add(anotherOne);
-					last = anotherOne;
-					anotherOne = findNeighbourWithHighestDegree(
-							rejectableClique, last, false);
-				}
-			}
+			acceptableClique = cg.getAcceptableClique();
+			rejectableClique = cg.getRejectableClique();
 		}
 
 		if (noisyP > 0) {
@@ -196,16 +153,16 @@ public class DimacsFileGenerator {
 		}
 	}
 
-	public String generateFile() throws IOException {
+	public String generateFile(boolean isBimander) throws IOException {
 		File tmp = new File(tmpFile);
 		try (PrintWriter tmpPW = new PrintWriter(tmp)) {
 			Buffer buffer = new Buffer(tmpPW);
 			try (PrintWriter pwDF = new PrintWriter(dimacsFile)) {
 
 				printOneAtLeast(buffer);
-				printOneAtMost(buffer);
+				printOneAtMost(buffer, isBimander);
 				printParentRelationIsSet(buffer);
-				printParentRelationAtMostOneColor(buffer);
+				printParentRelationAtMostOneColor(buffer, isBimander);
 				printParentRelationAtLeastOneColor(buffer);
 				printParentRelationForces(buffer);
 
@@ -316,38 +273,6 @@ public class DimacsFileGenerator {
 		}
 	}
 
-	private int findNeighbourWithHighestDegree(Set<Integer> cur, int v, boolean acceptable) {
-		int maxDegree = 0;
-		int maxNeighbour = -1;
-		// uv - edge
-		for (int u : cg.getEdges().get(v)) {
-			if (acceptable && !apta.isAcceptable(u)) {
-				continue;
-			}
-			if (!acceptable && !apta.isRejectable(u)) {
-				continue;
-			}
-			boolean uInClique = true;
-			// check if other vertices in cur connected with u
-			for (int w : cur) {
-				if (w != v) {
-					if (!cg.getEdges().get(w).contains(u)) {
-						uInClique = false;
-						break;
-					}
-				}
-			}
-			if (uInClique) {
-				int uDegree = cg.getEdges().get(u).size();
-				if (uDegree > maxDegree) {
-					maxDegree = uDegree;
-					maxNeighbour = u;
-				}
-			}
-		}
-		return maxNeighbour;
-	}
-
 	// Each vertex has at least one color.
 	// x_{v,1} or x_{v,2} or ... or x_{v, |C|}
 	private void printOneAtLeast(Buffer buffer) {
@@ -394,12 +319,25 @@ public class DimacsFileGenerator {
 
 	// each parent relation can target at most one color
 	// (!y_{i,h,a} or !y_{i,j,a}) where a in Alphabet, h < j
-	private void printParentRelationAtMostOneColor(Buffer buffer) {
-		for (String st : apta.getAlphabet()) {
-			for (int i = 0; i < colors; i++) {
-				for (int j = 0; j < colors; j++) {
-					for (int h = 0; h < j; h++) {
-						buffer.addClause(-y[i][h].get(st), -y[i][j].get(st));
+	private void printParentRelationAtMostOneColor(Buffer buffer, boolean isBimander) {
+		if (isBimander) {
+			List<Integer> yList = new ArrayList<>();
+			for (String st : apta.getAlphabet()) {
+				for (int i = 0; i < colors; i++) {
+					yList.clear();
+					for (int j = 0; j < colors; j++) {
+						yList.add(y[i][j].get(st));
+					}
+					atMostOneBimander(buffer, (int) Math.ceil(Math.sqrt((double) colors)), yList);
+				}
+			}
+		} else {
+			for (String st : apta.getAlphabet()) {
+				for (int i = 0; i < colors; i++) {
+					for (int j = 0; j < colors; j++) {
+						for (int h = 0; h < j; h++) {
+							buffer.addClause(-y[i][h].get(st), -y[i][j].get(st));
+						}
 					}
 				}
 			}
@@ -409,11 +347,22 @@ public class DimacsFileGenerator {
 
 	// each vertex has at most one color
 	// (!x_{v,i} or !x_{v,j}) where i < j
-	private void printOneAtMost(Buffer buffer) {
-		for (int v = 0; v < vertices; v++) {
-			for (int i = 0; i < colors; i++) {
-				for (int j = i + 1; j < colors; j++) {
-					buffer.addClause(-x[v][i], -x[v][j]);
+	private void printOneAtMost(Buffer buffer, boolean isBimander) {
+		if (isBimander && colors > 6) {
+			List<Integer> xList = new ArrayList<>();
+			for (int v = 0; v < vertices; v++) {
+				xList.clear();
+				for (int i : x[v]) {
+					xList.add(i);
+				}
+				atMostOneBimander(buffer, (int) Math.ceil(Math.sqrt((double) colors)), xList);
+			}
+		} else {
+			for (int v = 0; v < vertices; v++) {
+				for (int i = 0; i < colors; i++) {
+					for (int j = i + 1; j < colors; j++) {
+						buffer.addClause(-x[v][i], -x[v][j]);
+					}
 				}
 			}
 		}
@@ -790,6 +739,81 @@ public class DimacsFileGenerator {
 			}
 		}
 		buffer.flush();
+	}
+
+	private void atMostOneBimander(Buffer buffer, int m, List<Integer> vars) {
+		int n = vars.size();
+		int g = (int) Math.ceil((double) n / m);
+		int[] b;
+		int k = log2(m);
+		BitMask bm = new BitMask(k);
+		int curGfrom = 0;
+		int curGto = g;
+		//first part of bimander. AMO in groups
+		while (curGfrom != n) {
+			for (int i = curGfrom; i < curGto - 1; i++) {
+				for (int j = i + 1; j < curGto; j++) {
+					buffer.addClause(-vars.get(i), -vars.get(j));
+				}
+			}
+			curGfrom = curGto;
+			curGto = Math.min(curGto + g, n);
+		}
+		//redundant vars
+		b = new int[k];
+		for (int i = 0; i < k; i++) {
+			b[i] = maxVar++;
+		}
+		curGfrom = 0;
+		curGto = g;
+		//second part of bimander
+		while (curGfrom != n) {
+			for (int i = curGfrom; i < curGto; i++) {
+				for (int j = 0; j < k; j++) {
+					int sign = bm.get(j) ? 1 : -1;
+					buffer.addClause(-vars.get(i), sign * b[j]);
+				}
+			}
+			curGfrom = curGto;
+			curGto = Math.min(curGto + g, n);
+			bm.next();
+		}
+	}
+
+	private static int log2(int n) {
+		if (n <= 0) {
+			throw new IllegalArgumentException();
+		}
+		return 31 - Integer.numberOfLeadingZeros(n);
+	}
+
+	private class BitMask {
+		boolean[] ar;
+		int n;
+
+		BitMask(int n) {
+			this.n = n;
+			ar = new boolean[n];
+		}
+
+		void next() {
+			for (int i = 0; i < n; i++) {
+				if (ar[i]) {
+					ar[i] = false;
+				} else {
+					ar[i] = true;
+					break;
+				}
+			}
+		}
+
+		boolean get(int i) {
+			return ar[i];
+		}
+
+		void clear() {
+			ar = new boolean[n];
+		}
 	}
 
 }

@@ -34,7 +34,7 @@ public class Main {
 	private int SBStrategy = 1;
 
 	@Option(name = "--timeout", aliases = {"-t"}, usage = "timeout", metaVar = "<timeout>")
-	private int timeout = 300;
+	private int timeout = 600;
 
 	@Option(name = "--solver", aliases = {"-sat"}, usage = "external SAT solver. using sat4j by default",
 			metaVar = "<SAT solver>")
@@ -54,8 +54,11 @@ public class Main {
 			handler = BooleanOptionHandler.class)
 	private boolean findAllMode;
 
-	@Option(name = "--find", aliases = {"-f"}, usage = "find COUNT or less", metaVar = "find")
+	@Option(name = "--find", aliases = {"-f"}, usage = "find COUNT or less", metaVar = "<find>")
 	private int findCount = 0;
+
+	@Option(name = "--atmostone", aliases = {"-amo"}, usage = "bimander or pairwise at most one", metaVar = "<amo>")
+	private boolean isBimander;
 
 	@Argument(usage = "dictionary file", metaVar = "<file>", required = true)
 	private String file;
@@ -63,6 +66,7 @@ public class Main {
 	private static Logger logger = Logger.getLogger("Logger");
 
 	private void launch(String... args) {
+		long fullStartTime = System.currentTimeMillis();
 		CmdLineParser parser = new CmdLineParser(this);
 		try {
 			parser.parseArgument(args);
@@ -111,16 +115,28 @@ public class Main {
 			if (!noisyMode) {
 				logger.info("CG was successfully built");
 			}
+			if (SBStrategy == 3) {
+				cg.findClique();
+				minSize = Math.max(cg.getCliqueSize(), minSize);
+				logger.info("Clique was found. Its size is " + minSize + ".");
+			}
 			boolean found = false;
 			for (int colors = minSize; colors <= maxSize && !found; colors++) {
 				logger.info("Try to build automaton with " + colors + " colors");
 				long startTime = 0;
 				try {
+					if ((System.currentTimeMillis() - fullStartTime) / 1000. > timeout) {
+						if (colors == minSize) {
+							throw new TimeoutException();
+						}
+						break;
+					}
 					DimacsFileGenerator dfg = new DimacsFileGenerator(apta, cg, colors, SBStrategy, p, dimacsFile);
-					dfg.generateFile();
+					dfg.generateFile(isBimander);
 					logger.info("SAT problem in dimacs format successfully generated");
 					do {
-						SATSolver solver = new SATSolver(apta, colors, dimacsFile, timeout, externalSATSolver);
+						SATSolver solver = new SATSolver(apta, colors, dimacsFile,
+								(int) (timeout - ((System.currentTimeMillis() - fullStartTime)) / 1000.), externalSATSolver);
 						logger.info("SAT solver successfully initialized");
 
 						logger.info("Vars in the SAT problem: " + solver.nVars());
@@ -155,7 +171,7 @@ public class Main {
 							if (findAllMode) {
 								dfg.banSolution(automaton);
 								curDFA++;
-								if (curDFA > findCount) {
+								if (findCount > 0 && curDFA > findCount) {
 									break;
 								}
 							} else {
@@ -174,22 +190,22 @@ public class Main {
 				} catch (ContradictionException e) {
 					logger.info("The automaton with " + colors + " colors wasn't found! :(");
 					logger.info("Execution time: " + (System.currentTimeMillis() - startTime) / 1000.);
-
 				} catch (TimeoutException e) {
 					logger.info("Timeout " + timeout + " seconds was reached");
 					logger.info("Execution time: " + timeout);
+					break;
 				} catch (IOException e) {
 					logger.warning("Some problem with generating dimacs file: " + e.getMessage());
 					return;
 				} catch (ParseFormatException e) {
-					logger.warning("Some problem with parsing dimacs file:" +
-							" " + e.getMessage());
+					logger.warning("Some problem with parsing dimacs file: " + e.getMessage());
 				}
 			}
 			logger.info("Working with file \"" + file + "\" finished\n");
 		} catch (IOException e) {
 			logger.warning("Some unexpected problem with file \"" + file + "\":" + e.getMessage());
 		}
+		logger.info("Full time: " + (System.currentTimeMillis() - fullStartTime) / 1000.);
 	}
 
 	private String fineNumber(int number) {
