@@ -101,7 +101,7 @@ public class Validator {
 			if (correct) {
 				if (bfsMode) {
 					logger.info("Checking for BFS-enumeration started.");
-					if (bfsCheck(automaton)) {
+					if (new BFSChecker(automaton).check()) {
 						logger.info("The automaton is BFS-enumerated! Congrats :)");
 					} else {
 						logger.warning("The automaton is not BFS-enumerated! Too sad :(");
@@ -109,7 +109,7 @@ public class Validator {
 				}
 				if (dfsMode) {
 					logger.info("Checking for DFS-enumeration started.");
-					if (bfsCheck(automaton)) {
+					if (new DFSChecker(automaton).check()) {
 						logger.info("The automaton is DFS-enumerated! Congrats :)");
 					} else {
 						logger.warning("The automaton is not DFS-enumerated! Too sad :(");
@@ -121,55 +121,76 @@ public class Validator {
 		}
 	}
 
-	private boolean bfsCheck(Automaton automaton) {
-		Queue<Node> queue = new LinkedList<>();
-		boolean[] visited = new boolean[automaton.size()];
-		List<String> alphabet = new ArrayList<>(automaton.getStart().getChildren().keySet());
-		Collections.sort(alphabet);
-		int num = 0;
+	private class BFSChecker {
+		Automaton automaton;
+		Queue<Node> queue;
+		boolean[] visited;
+		List<String> alphabet;
+		int expected;
 
-		queue.add(automaton.getStart());
-		visited[automaton.getStart().getNumber()] = true;
-		Node cur;
-		while (!queue.isEmpty()) {
-			cur = queue.remove();
-			if (cur.getNumber() != num++) {
+		BFSChecker(Automaton automaton) {
+			this.automaton = automaton;
+			queue = new LinkedList<>();
+			visited = new boolean[automaton.size()];
+			alphabet = new ArrayList<>(automaton.getStart().getChildren().keySet());
+			Collections.sort(alphabet);
+			expected = 0;
+		}
+
+		boolean check() {
+			queue.add(automaton.getStart());
+			visited[automaton.getStart().getNumber()] = true;
+			Node cur;
+			while (!queue.isEmpty()) {
+				cur = queue.remove();
+				if (cur.getNumber() != expected++) {
+					return false;
+				}
+				for (String label : alphabet) {
+					Node child = cur.getChild(label);
+					if (!visited[child.getNumber()]) {
+						visited[child.getNumber()] = true;
+						queue.add(child);
+					}
+				}
+			}
+			return true;
+		}
+	}
+
+	private class DFSChecker {
+		Automaton automaton;
+		boolean visited[];
+		int expected;
+		List<String> alphabet;
+
+		DFSChecker(Automaton automaton) {
+			this.automaton = automaton;
+			visited = new boolean[automaton.size()];
+			alphabet = new ArrayList<>(automaton.getStart().getChildren().keySet());
+			Collections.sort(alphabet);
+			expected = 0;
+		}
+
+		boolean check() {
+			return dfs(automaton.getStart());
+		}
+
+		boolean dfs(Node cur) {
+			visited[cur.getNumber()] = true;
+			boolean res = true;
+
+			if (cur.getNumber() != expected++) {
 				return false;
 			}
 			for (String label : alphabet) {
 				Node child = cur.getChild(label);
 				if (!visited[child.getNumber()]) {
-					visited[child.getNumber()] = true;
-					queue.add(child);
+					res &= dfs(child);
 				}
 			}
+			return res;
 		}
-		return true;
-	}
-
-	private boolean dfsCheck(Automaton automaton) {
-		boolean[] visited = new boolean[automaton.size()];
-		List<String> alphabet = new ArrayList<>(automaton.getStart().getChildren().keySet());
-		Collections.sort(alphabet);
-		int num = 0;
-
-		return dfsCheckRec(automaton.getStart(), visited, alphabet, num);
-	}
-
-	private boolean dfsCheckRec(Node cur, boolean[] visited, List<String> alphabet, int expected) {
-		visited[cur.getNumber()] = true;
-		boolean res = true;
-
-		if (cur.getNumber() != expected++) {
-			return false;
-		}
-		for (String label : alphabet) {
-			Node child = cur.getChild(label);
-			if (!visited[child.getNumber()]) {
-				res &= dfsCheckRec(child, visited, alphabet, expected);
-			}
-		}
-		return res;
 	}
 
 	private void run(String... args) {
