@@ -9,7 +9,7 @@ public class AutomatonBuilder {
 		Map<Integer, Integer> f = null;
 		if (noisyMode) {
 			f = dfg.getF();
-		};
+		}
 		Automaton automaton = new Automaton(colors);
 		// map[vertex][color]
 		Map<Integer, Integer> colorsOfNodes = new HashMap<>();

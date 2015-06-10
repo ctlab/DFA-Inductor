@@ -153,7 +153,6 @@ public class Main {
 							found = true;
 							logger.info("The automaton" + DFAnumber + "with " + colors + " colors was found! :)");
 							logger.info("Execution time: " + (System.currentTimeMillis() - startTime) / 1000.);
-							Automaton automaton = null;
 							int[] model = null;
 							try {
 								model = solver.getModel();
@@ -161,7 +160,7 @@ public class Main {
 								logger.warning("Some problem with SATSolver. Shouldn't be here. " +
 										"Exception: " + e.getMessage());
 							}
-							automaton = AutomatonBuilder.build(model, dfg, apta, colors, noisyMode);
+							Automaton automaton = AutomatonBuilder.build(model, dfg, apta, colors, noisyMode);
 							String fullResultFilePath = resultFilePath;
 							if (findAllMode) {
 								fullResultFilePath += fineNumber(curDFA);
