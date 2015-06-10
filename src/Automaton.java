@@ -2,9 +2,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -124,6 +122,44 @@ public class Automaton {
 		s.append("}");
 
 		return s.toString();
+	}
+
+	private String enumerate() {
+		Queue<Node> queue = new LinkedList<>();
+		boolean[] visited = new boolean[this.size()];
+		List<String> alphabet = new ArrayList<>(this.getStart().getChildren().keySet());
+		Collections.sort(alphabet);
+		int cur_num = 0;
+
+		Map<Integer, Integer> enumeration = new HashMap<>();
+
+		queue.add(this.getStart());
+		visited[this.getStart().getNumber()] = true;
+		Node cur;
+		List<Integer> hash = new ArrayList<>();
+		while (!queue.isEmpty()) {
+			cur = queue.remove();
+			enumeration.put(cur.getNumber(), cur_num++);
+			for (String label : alphabet) {
+				hash.add(cur.getChild(label).getNumber());
+			}
+			for (String label : alphabet) {
+				Node child = cur.getChild(label);
+				if (!visited[child.getNumber()]) {
+					visited[child.getNumber()] = true;
+					queue.add(child);
+				}
+			}
+		}
+		for (int i = 0; i < hash.size(); i++) {
+			hash.set(i, enumeration.get(hash.get(i)));
+		}
+		return hash.toString();
+	}
+
+	@Override
+	public int hashCode() {
+		return enumerate().hashCode();
 	}
 
 	private boolean addState(int number) {
