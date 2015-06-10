@@ -171,11 +171,11 @@ public class DimacsFileGenerator {
 					buffer.addClause(x[0][0]);
 					printSBPEdgeExist(buffer);
 					printSBPMinimalSymbol(buffer);
-					printSBPParent(buffer);
 					// printSBPChildrenOrder(buffer);
 
 					printSBPParentExist(buffer);
 					if (SB == SBStrategy.BFS_SB) {
+						printSBPParentBFS(buffer);
 						printSBPOrderInLayerBFS(buffer);
 						if (apta.getAlphaSize() == 2) {
 							printSBPOrderByChildrenSymbolForSizeTwoBFS(buffer);
@@ -183,6 +183,7 @@ public class DimacsFileGenerator {
 							printSBPOrderByChildrenSymbolBFS(buffer);
 						}
 					} else {
+						printSBPParentDFS(buffer);
 						printSBPSubtreeNotIntersectDFS(buffer);
 						if (apta.getAlphaSize() == 2) {
 							printSBPOrderByChildrenSymbolForSizeTwoDFS(buffer);
@@ -465,7 +466,7 @@ public class DimacsFileGenerator {
 	}
 
 	// p_{i,j} <=> e_{j,i} and !e{j-1,i} and ... and !e{0, i}
-	private void printSBPParent(Buffer buffer) {
+	private void printSBPParentBFS(Buffer buffer) {
 		for (int i = 1; i < colors; i++) {
 			for (int j = 0; j < i; j++) {
 				StringBuilder tmp = new StringBuilder(p[i][j] + " " + -e[j][i]
@@ -474,6 +475,25 @@ public class DimacsFileGenerator {
 				buffer.addClause(-p[i][j], e[j][i]);
 
 				for (int k = 0; k < j; k++) {
+					buffer.addClause(-p[i][j], -e[k][i]);
+
+					tmp.append(e[k][i]).append(" ");
+				}
+				buffer.addClause(tmp);
+			}
+		}
+		buffer.flush();
+	}
+
+	// p_{i,j} <=> e_{j,i} and !e{j+1,i} and ... and !e{i-1, i}
+	private void printSBPParentDFS(Buffer buffer) {
+		for (int i = 1; i < colors; i++) {
+			for (int j = 0; j < i; j++) {
+				StringBuilder tmp = new StringBuilder(p[i][j] + " " + -e[j][i]
+						+ " ");
+				buffer.addClause(-p[i][j], e[j][i]);
+
+				for (int k = j + 1; k < i; k++) {
 					buffer.addClause(-p[i][j], -e[k][i]);
 
 					tmp.append(e[k][i]).append(" ");
@@ -556,8 +576,8 @@ public class DimacsFileGenerator {
 		for (int i = 1; i < colors - 1; i++) {
 			for (int j = 0; j < i; j++) {
 				for (int s = i + 1; s < colors; s++) {
-					buffer.addClause(-p[i][j], -p[s][j], y[j][i].get("0"));
-					buffer.addClause(-p[i][j], -p[s][j], y[j][s].get("1"));
+					buffer.addClause(-p[i][j], -e[j][s], y[j][i].get("0"));
+					buffer.addClause(-p[i][j], -e[j][s], y[j][s].get("1"));
 				}
 			}
 		}
@@ -582,7 +602,7 @@ public class DimacsFileGenerator {
 			for (int j = 0; j < i; j++) {
 				for (int t = j + 1; t < i; t++) {
 					for (int s = i + 1; s < colors; s++) {
-						buffer.addClause(-p[i][j], -p[s][t]);
+						buffer.addClause(-p[i][j], -e[t][s]);
 					}
 				}
 			}
