@@ -115,10 +115,12 @@ public class Main {
 			if (!noisyMode) {
 				logger.info("CG was successfully built");
 			}
-			if (SBStrategy == 3) {
+			if (!noisyMode) {
 				cg.findClique();
-				minSize = Math.max(cg.getCliqueSize(), minSize);
-				logger.info("Clique was found. Its size is " + minSize + ".");
+				int cliqueSize = cg.getCliqueSize();
+				minSize = Math.max(cliqueSize, minSize);
+				logger.info("Clique was found. Its size is " + cliqueSize + ".");
+				logger.info("Searching will be started from size " + minSize + ".");
 			}
 			boolean found = false;
 			for (int colors = minSize; colors <= maxSize && !found; colors++) {
