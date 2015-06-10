@@ -211,7 +211,9 @@ public class Main {
 	}
 
 	private String fineNumber(int number) {
-		return (number < 10) ? "00" + number : number < 100 ? "0" + number : String.valueOf(number);
+		return (number < 10) ? "000" + number :
+				number < 100 ? "00" + number :
+				number < 1000 ? "0" + number : String.valueOf(number);
 	}
 
 	private void run(String... args) {
