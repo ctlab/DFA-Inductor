@@ -229,7 +229,7 @@ public class DimacsFileGenerator {
 		return dimacsFile;
 	}
 
-	public void banSolution(Automaton automaton) throws IOException {
+	public void banSolution(Automaton automaton, int[] model) throws IOException {
 		List<String> cache = new ArrayList<>();
 		try (BufferedReader br = new BufferedReader(new FileReader(dimacsFile))) {
 			String line = br.readLine();
@@ -248,9 +248,18 @@ public class DimacsFileGenerator {
 			}
 			Buffer buffer = new Buffer(pwDF);
 			StringBuilder sb = new StringBuilder();
-			for (Node state : automaton.getStates()) {
-				for (Entry<String, Node> e : state.getChildren().entrySet()) {
-					sb.append(-y[state.getNumber()][e.getValue().getNumber()].get(e.getKey())).append(" ");
+//			for (Node state : automaton.getStates()) {
+//				for (Entry<String, Node> e : state.getChildren().entrySet()) {
+//					sb.append(-y[state.getNumber()][e.getValue().getNumber()].get(e.getKey())).append(" ");
+//				}
+//			}
+			for (int i = 0; i < colors; i++) {
+				for (int j = 0; j < colors; j++) {
+					for (String label : alphabet) {
+						if (model[y[i][j].get(label) - 1] > 0) {
+							sb.append(-y[i][j].get(label)).append(" ");
+						}
+					}
 				}
 			}
 			buffer.addClause(sb);
