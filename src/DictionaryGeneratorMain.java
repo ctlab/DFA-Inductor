@@ -32,6 +32,10 @@ public class DictionaryGeneratorMain {
 	@Option(name = "--alphabet", aliases = {"-a"}, usage = "alphabet size", metaVar = "<alphabet size>")
 	private int alphabetSize = 2;
 
+	@Option(name = "--startlenght", aliases = {"-sl"}, usage = "length of the smallest generated word",
+			metaVar = "<smallest word length>")
+	private int startLength = 3;
+
 	private static Logger logger = Logger.getLogger("Logger");
 
 	private void launch(String... args) {
@@ -105,7 +109,7 @@ public class DictionaryGeneratorMain {
 			Node curNode;
 
 			int WordsLessThenCurrentLengthCount = 2;
-			int length = 3;
+			int length = startLength;
 			int currentWordNumber = 0;
 
 			int noisyWords = 0;
