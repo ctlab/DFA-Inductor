@@ -162,6 +162,12 @@ public class Automaton {
 		return enumerate().hashCode();
 	}
 
+	@Override
+	public boolean equals(Object arg) {
+		Automaton obj = (Automaton) arg;
+		return this.hashCode() == obj.hashCode();
+	}
+
 	private boolean addState(int number) {
 		int cur = states.size();
 		if (cur <= number) {
