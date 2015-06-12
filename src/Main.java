@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
 import java.util.Locale;
+import java.util.Set;
 import java.util.logging.FileHandler;
 import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
@@ -59,6 +60,11 @@ public class Main {
 
 	@Option(name = "--atmostone", aliases = {"-amo"}, usage = "bimander or pairwise at most one", metaVar = "<amo>")
 	private boolean isBimander;
+
+	@Option(name = "--backtracking", aliases = {"-bt"}, usage = "using backtracking instead of SAT approach",
+			forbids = {"--strategy", "-sb", "--solver", "-sat", "--dimacs", "-d", "--atmostone", "-amo", "--percent",
+					"-p"})
+	private boolean backtrackingMode;
 
 	@Argument(usage = "dictionary file", metaVar = "<file>", required = true)
 	private String file;
@@ -110,98 +116,156 @@ public class Main {
 			logger.info("APTA size: " + apta.getSize());
 			logger.info("Ends in APTA: " + (apta.getAcceptableNodes().size() + apta.getRejectableNodes().size()));
 			logger.info("Count of words: " + apta.getCountOfWords());
+			if (!backtrackingMode) {
+				ConsistencyGraph cg = new ConsistencyGraph(apta, noisyMode);
+				if (!noisyMode) {
+					logger.info("CG was successfully built");
+				}
+				if (!noisyMode) {
+					cg.findClique();
+					int cliqueSize = cg.getCliqueSize();
+					minSize = Math.max(cliqueSize, minSize);
+					logger.info("Clique was found. Its size is " + cliqueSize + ".");
+					logger.info("Searching will be started from size " + minSize + ".");
+				}
+				boolean found = false;
+				for (int colors = minSize; colors <= maxSize && !found; colors++) {
+					logger.info("Try to build automaton with " + colors + " colors");
+					long startTime = 0;
+					try {
+						if ((System.currentTimeMillis() - fullStartTime) / 1000. > timeout) {
+							if (colors == minSize) {
+								throw new TimeoutException();
+							}
+							break;
+						}
+						DimacsFileGenerator dfg = new DimacsFileGenerator(apta, cg, colors, SBStrategy, p, dimacsFile);
+						dfg.generateFile(isBimander);
+						logger.info("SAT problem in dimacs format successfully generated");
+						do {
+							SATSolver solver = new SATSolver(apta, colors, dimacsFile,
+									(int) (timeout - ((System.currentTimeMillis() - fullStartTime)) / 1000.), externalSATSolver);
+							logger.info("SAT solver successfully initialized");
 
-			ConsistencyGraph cg = new ConsistencyGraph(apta, noisyMode);
-			if (!noisyMode) {
+							logger.info("Vars in the SAT problem: " + solver.nVars());
+							logger.info("Constraints in the SAT problem: " + solver.nConstraints());
+
+							startTime = System.currentTimeMillis();
+							String DFAnumber = " ";
+							if (findAllMode) {
+								DFAnumber = " number " + String.valueOf(curDFA) + " ";
+							}
+							if (solver.problemIsSatisfiable()) {
+								found = true;
+								logger.info("The automaton" + DFAnumber + "with " + colors + " colors was found! :)");
+								logger.info("Execution time: " + (System.currentTimeMillis() - startTime) / 1000.);
+								int[] model = null;
+								try {
+									model = solver.getModel();
+								} catch (Exception e) {
+									logger.warning("Some problem with SATSolver. Shouldn't be here. " +
+											"Exception: " + e.getMessage());
+								}
+								Automaton automaton = AutomatonBuilder.build(model, dfg, apta, colors, noisyMode);
+								String fullResultFilePath = resultFilePath;
+								if (findAllMode) {
+									fullResultFilePath += fineNumber(curDFA);
+								}
+								fullResultFilePath += ".dot";
+								try (PrintWriter pw = new PrintWriter(fullResultFilePath)) {
+									pw.print(automaton + "\n");
+								} catch (IOException e) {
+									logger.info("Problem with result file: " + e.getMessage());
+								}
+								if (findAllMode) {
+									dfg.banSolution(automaton, model);
+									curDFA++;
+									if (findCount > 0 && curDFA > findCount) {
+										break;
+									}
+								} else {
+									break;
+								}
+							} else {
+								if (findAllMode && found) {
+									logger.info("No more automatons with " + colors + " colors were found! :(");
+								} else {
+									logger.info("The automaton with " + colors + " colors wasn't found! :(");
+								}
+								logger.info("Execution time: " + (System.currentTimeMillis() - startTime) / 1000.);
+								break;
+							}
+						} while (true);
+					} catch (ContradictionException e) {
+						logger.info("The automaton with " + colors + " colors wasn't found! :(");
+						logger.info("Execution time: " + (System.currentTimeMillis() - startTime) / 1000.);
+					} catch (TimeoutException e) {
+						logger.info("Timeout " + timeout + " seconds was reached");
+						logger.info("Execution time: " + timeout);
+						break;
+					} catch (IOException e) {
+						logger.warning("Some problem with generating dimacs file: " + e.getMessage());
+						return;
+					} catch (ParseFormatException e) {
+						logger.warning("Some problem with parsing dimacs file: " + e.getMessage());
+					}
+				}
+			} else {
+				ConsistencyGraph cg = new ConsistencyGraph(apta, noisyMode);
 				logger.info("CG was successfully built");
-			}
-			if (!noisyMode) {
 				cg.findClique();
 				int cliqueSize = cg.getCliqueSize();
 				minSize = Math.max(cliqueSize, minSize);
 				logger.info("Clique was found. Its size is " + cliqueSize + ".");
 				logger.info("Searching will be started from size " + minSize + ".");
-			}
-			boolean found = false;
-			for (int colors = minSize; colors <= maxSize && !found; colors++) {
-				logger.info("Try to build automaton with " + colors + " colors");
-				long startTime = 0;
-				try {
-					if ((System.currentTimeMillis() - fullStartTime) / 1000. > timeout) {
-						if (colors == minSize) {
-							throw new TimeoutException();
-						}
-						break;
-					}
-					DimacsFileGenerator dfg = new DimacsFileGenerator(apta, cg, colors, SBStrategy, p, dimacsFile);
-					dfg.generateFile(isBimander);
-					logger.info("SAT problem in dimacs format successfully generated");
-					do {
-						SATSolver solver = new SATSolver(apta, colors, dimacsFile,
-								(int) (timeout - ((System.currentTimeMillis() - fullStartTime)) / 1000.), externalSATSolver);
-						logger.info("SAT solver successfully initialized");
-
-						logger.info("Vars in the SAT problem: " + solver.nVars());
-						logger.info("Constraints in the SAT problem: " + solver.nConstraints());
-
-						startTime = System.currentTimeMillis();
-						String DFAnumber = " ";
-						if (findAllMode) {
-							DFAnumber = " number " + String.valueOf(curDFA) + " ";
-						}
-						if (solver.problemIsSatisfiable()) {
-							found = true;
-							logger.info("The automaton" + DFAnumber + "with " + colors + " colors was found! :)");
-							logger.info("Execution time: " + (System.currentTimeMillis() - startTime) / 1000.);
-							int[] model = null;
-							try {
-								model = solver.getModel();
-							} catch (Exception e) {
-								logger.warning("Some problem with SATSolver. Shouldn't be here. " +
-										"Exception: " + e.getMessage());
+				boolean found = false;
+				for (int colors = minSize; colors <= maxSize && !found; colors++) {
+					logger.info("Try to build automaton with " + colors + " colors");
+					long startTime = 0;
+					try {
+						if ((System.currentTimeMillis() - fullStartTime) / 1000. > timeout) {
+							if (colors == minSize) {
+								throw new TimeoutException();
 							}
-							Automaton automaton = AutomatonBuilder.build(model, dfg, apta, colors, noisyMode);
-							String fullResultFilePath = resultFilePath;
-							if (findAllMode) {
-								fullResultFilePath += fineNumber(curDFA);
-							}
-							fullResultFilePath += ".dot";
-							try (PrintWriter pw = new PrintWriter(fullResultFilePath)) {
-								pw.print(automaton + "\n");
-							} catch (IOException e) {
-								logger.info("Problem with result file: " + e.getMessage());
-							}
-							if (findAllMode) {
-								dfg.banSolution(automaton, model);
-								curDFA++;
-								if (findCount > 0 && curDFA > findCount) {
-									break;
-								}
-							} else {
-								break;
-							}
-						} else {
-							if (findAllMode && found) {
-								logger.info("No more automatons with " + colors + " colors were found! :(");
-							} else {
-								logger.info("The automaton with " + colors + " colors wasn't found! :(");
-							}
-							logger.info("Execution time: " + (System.currentTimeMillis() - startTime) / 1000.);
 							break;
 						}
-					} while (true);
-				} catch (ContradictionException e) {
-					logger.info("The automaton with " + colors + " colors wasn't found! :(");
-					logger.info("Execution time: " + (System.currentTimeMillis() - startTime) / 1000.);
-				} catch (TimeoutException e) {
-					logger.info("Timeout " + timeout + " seconds was reached");
-					logger.info("Execution time: " + timeout);
-					break;
-				} catch (IOException e) {
-					logger.warning("Some problem with generating dimacs file: " + e.getMessage());
-					return;
-				} catch (ParseFormatException e) {
-					logger.warning("Some problem with parsing dimacs file: " + e.getMessage());
+						BacktrackingSolver solver = new BacktrackingSolver(apta, colors,
+								(int) (timeout - ((System.currentTimeMillis() - fullStartTime)) / 1000.), findAllMode);
+						logger.info("Backtracking solver successfully initialized");
+						startTime = System.currentTimeMillis();
+						if (solver.problemIsBacktrackinging()) {
+							found = true;
+							Set<Automaton> dfas = solver.getAnswer();
+							if (dfas.size() == 1) {
+								logger.info("The automaton" + " with " + colors + " colors was found! :)");
+							} else {
+								logger.info(dfas.size() + " automatons" + " with " + colors + " colors were found! :)");
+							}
+							logger.info("Execution time: " + (System.currentTimeMillis() - startTime) / 1000.);
+							for (Automaton automaton : dfas) {
+								String fullResultFilePath = resultFilePath;
+								if (findAllMode) {
+									fullResultFilePath += fineNumber(curDFA++);
+								}
+								fullResultFilePath += ".dot";
+								try (PrintWriter pw = new PrintWriter(fullResultFilePath)) {
+									pw.print(automaton + "\n");
+								} catch (IOException e) {
+									logger.info("Problem with result file: " + e.getMessage());
+								}
+							}
+							if (timeout < (System.currentTimeMillis() - fullStartTime) / 1000) {
+								throw new TimeoutException();
+							}
+						} else {
+							logger.info("The automaton with " + colors + " colors wasn't found! :(");
+							logger.info("Execution time: " + (System.currentTimeMillis() - startTime) / 1000.);
+						}
+					} catch (TimeoutException e) {
+						logger.info("Timeout " + timeout + " seconds was reached");
+						logger.info("Execution time: " + timeout);
+						break;
+					}
 				}
 			}
 			logger.info("Working with file \"" + file + "\" finished\n");
