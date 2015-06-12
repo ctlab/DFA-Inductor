@@ -58,7 +58,8 @@ public class Main {
 	@Option(name = "--find", aliases = {"-f"}, usage = "find COUNT or less", metaVar = "<find>")
 	private int findCount = 0;
 
-	@Option(name = "--atmostone", aliases = {"-amo"}, usage = "bimander or pairwise at most one", metaVar = "<amo>")
+	@Option(name = "--atmostone", aliases = {"-amo"}, usage = "bimander or pairwise at most one, pairwise by default",
+			metaVar = "<amo>")
 	private boolean isBimander;
 
 	@Option(name = "--backtracking", aliases = {"-bt"}, usage = "using backtracking instead of SAT approach",
@@ -278,7 +279,7 @@ public class Main {
 	private String fineNumber(int number) {
 		return (number < 10) ? "000" + number :
 				number < 100 ? "00" + number :
-				number < 1000 ? "0" + number : String.valueOf(number);
+						number < 1000 ? "0" + number : String.valueOf(number);
 	}
 
 	private void run(String... args) {
