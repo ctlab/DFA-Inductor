@@ -128,4 +128,37 @@ public class APTA {
 	private int nextInt(BufferedReader br) throws IOException {
 		return Integer.parseInt(nextToken(br));
 	}
+
+	public String toString() {
+		StringBuilder s = new StringBuilder();
+		s.append("digraph Automat {\n");
+		s.append("    node [shape = circle];\n");
+		s.append("    0 [style = \"bold\"];\n");
+
+		for (int i = 0; i < size; i++) {
+			Node state = indexesOfNodes.get(i);
+			if (state.isAcceptable()) {
+				s.append("    ");
+				s.append(state.getNumber());
+				s.append(" [peripheries=2]\n");
+			}
+			if (state.isRejectable()) {
+				s.append("    ");
+				s.append(state.getNumber());
+				s.append(" [peripheries=3]\n");
+			}
+			for (Map.Entry<String, Node> e : state.getChildren().entrySet()) {
+				s.append("    ");
+				s.append(state.getNumber());
+				s.append(" -> ");
+				s.append(e.getValue().getNumber());
+				s.append(" [label = \"");
+				s.append(e.getKey());
+				s.append("\"];\n");
+			}
+		}
+		s.append("}");
+
+		return s.toString();
+	}
 }
