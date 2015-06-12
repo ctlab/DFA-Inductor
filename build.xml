@@ -33,7 +33,7 @@
                includeantruntime="false"
                debug="true"
                debuglevel="lines,vars,source">
-            <include name="**"/>
+            <include name="${main.main}.java"/>
         </javac>
 
         <jar destfile="${jars.dir}/${main.jar}"
@@ -54,11 +54,11 @@
 
         <javac srcdir="${src.dir}"
                destdir="${bin.dir}"
-               classpath="${sat4j.path}:${args4j.path}"
+               classpath="${args4j.path}"
                includeantruntime="false"
                debug="true"
                debuglevel="lines,vars,source">
-            <include name="**"/>
+            <include name="${dicGen.main}.java"/>
         </javac>
 
         <jar destfile="${jars.dir}/${dicGen.jar}"
@@ -67,7 +67,6 @@
                 <attribute name="Main-Class" value="${dicGen.main}"/>
             </manifest>
 
-            <zipfileset src="${sat4j.path}" excludes="META-INF/*.SF"/>
             <zipfileset src="${args4j.path}" excludes="META-INF/*.SF"/>
         </jar>
     </target>
@@ -77,11 +76,11 @@
         <mkdir dir="${jars.dir}"/>
         <javac srcdir="${src.dir}"
                destdir="${bin.dir}"
-               classpath="${sat4j.path}:${args4j.path}"
+               classpath="${args4j.path}"
                includeantruntime="false"
                debug="true"
                debuglevel="lines,vars,source">
-            <include name="**"/>
+            <include name="${validator.main}.java"/>
         </javac>
 
         <jar destfile="${jars.dir}/${validator.jar}"
@@ -90,7 +89,6 @@
                 <attribute name="Main-Class" value="${validator.main}"/>
             </manifest>
 
-            <zipfileset src="${sat4j.path}" excludes="META-INF/*.SF"/>
             <zipfileset src="${args4j.path}" excludes="META-INF/*.SF"/>
         </jar>
 
