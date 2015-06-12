@@ -26,19 +26,21 @@ public class Node {
 		this.status = status;
 	}
 
-	public Node(int number, String label, Node father) {
+	public Node(int number, String label, Node parent) {
 		this.number = number;
 		this.children = new HashMap<>();
 		this.parents = new HashMap<>();
-		this.parents.put(label, father);
+		this.parents.put(label, parent);
+		parent.children.put(label, this);
 		this.status = Status.COMMON;
 	}
 
-	public Node(int number, String label, Node father, Status status) {
+	public Node(int number, String label, Node parent, Status status) {
 		this.number = number;
 		this.children = new HashMap<>();
 		this.parents = new HashMap<>();
-		this.parents.put(label, father);
+		this.parents.put(label, parent);
+		parent.children.put(label, this);
 		this.status = status;
 	}
 
@@ -80,9 +82,11 @@ public class Node {
 
 	public void addChild(String s, Node child) {
 		children.put(s, child);
+		child.parents.put(s, this);
 	}
 
-	public void addParent(String s, Node child) {
-		parents.put(s, child);
+	public void addParent(String s, Node parent) {
+		parents.put(s, parent);
+		parent.children.put(s, this);
 	}
 }
