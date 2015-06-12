@@ -9,7 +9,23 @@ import java.util.regex.Pattern;
 
 public class Automaton {
 	private Node start;
-	List<Node> states;
+	private List<Node> states;
+
+	public Automaton(Automaton automaton) {
+		this(automaton.size());
+
+		for (int i = 0; i < automaton.getStates().size(); i++) {
+			Node thisNode = this.states.get(i);
+			Node otherNode = automaton.getStates().get(i);
+			thisNode.setStatus(otherNode.getStatus());
+			for (Map.Entry<String, Node> entry : otherNode.getChildren().entrySet()) {
+				thisNode.addChild(entry.getKey(), this.states.get(entry.getValue().getNumber()));
+			}
+			for (Map.Entry<String, Node> entry : otherNode.getParents().entrySet()) {
+				thisNode.addParent(entry.getKey(), this.states.get(entry.getValue().getNumber()));
+			}
+		}
+	}
 
 	public Automaton(int size) {
 		int cur = 0;
