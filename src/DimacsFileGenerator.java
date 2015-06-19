@@ -605,7 +605,7 @@ public class DimacsFileGenerator {
 		buffer.flush();
 	}
 
-	// p_{i,j} => !p_{i+k,j-q}
+	// p_{i,j} => !t_{i+k,j-q}
 	private void printSBPSubtreeNotIntersectDFS(Buffer buffer) {
 		for (int i = 1; i < colors - 1; i++) {
 			for (int j = 0; j < i; j++) {
