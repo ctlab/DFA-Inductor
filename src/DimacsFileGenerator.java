@@ -263,7 +263,6 @@ public class DimacsFileGenerator {
 				}
 			}
 			buffer.addClause(sb);
-			buffer.flush();
 		}
 	}
 
@@ -293,7 +292,6 @@ public class DimacsFileGenerator {
 			}
 			buffer.addClause(sb);
 		}
-		buffer.flush();
 	}
 
 	// Accepting vertices cannot have the same color as rejecting vertices
@@ -307,7 +305,6 @@ public class DimacsFileGenerator {
 				buffer.addClause(-x[rej][i], -z[i]);
 			}
 		}
-		buffer.flush();
 	}
 
 	// A parent relation is set when a vertex and its parent are colored
@@ -324,7 +321,6 @@ public class DimacsFileGenerator {
 				}
 			}
 		}
-		buffer.flush();
 	}
 
 	// each parent relation can target at most one color
@@ -352,7 +348,6 @@ public class DimacsFileGenerator {
 				}
 			}
 		}
-		buffer.flush();
 	}
 
 	// each vertex has at most one color
@@ -376,7 +371,6 @@ public class DimacsFileGenerator {
 				}
 			}
 		}
-		buffer.flush();
 	}
 
 	// each parent relation must target at least one color
@@ -391,7 +385,6 @@ public class DimacsFileGenerator {
 				buffer.addClause(sb);
 			}
 		}
-		buffer.flush();
 	}
 
 	// a parent relation forces a vertex once the parent is colored
@@ -408,7 +401,6 @@ public class DimacsFileGenerator {
 				}
 			}
 		}
-		buffer.flush();
 	}
 
 	// all determinization conflicts explicitly added as clauses
@@ -425,7 +417,6 @@ public class DimacsFileGenerator {
 				}
 			}
 		}
-		buffer.flush();
 	}
 
 	// SBP
@@ -443,7 +434,6 @@ public class DimacsFileGenerator {
 				buffer.addClause(tmp);
 			}
 		}
-		buffer.flush();
 	}
 
 	// m_{i,j,c_k} <=> e_{i,j} and y_{i,j,c_k} and !y_{i,j,c_(k-1)} and ... and
@@ -471,7 +461,6 @@ public class DimacsFileGenerator {
 				}
 			}
 		}
-		buffer.flush();
 	}
 
 	// p_{i,j} <=> e_{j,i} and !e{j-1,i} and ... and !e{0, i}
@@ -491,7 +480,6 @@ public class DimacsFileGenerator {
 				buffer.addClause(tmp);
 			}
 		}
-		buffer.flush();
 	}
 
 	// p_{i,j} <=> e_{j,i} and !e{j+1,i} and ... and !e{i-1, i}
@@ -510,7 +498,6 @@ public class DimacsFileGenerator {
 				buffer.addClause(tmp);
 			}
 		}
-		buffer.flush();
 	}
 
 //	// p_{i,j} and !p_{i+1,j} => !p_{i+q, j}
@@ -522,8 +509,7 @@ public class DimacsFileGenerator {
 //				}
 //			}
 //		}
-//		buffer.flush();
-//	}
+// 	}
 
 	// if alphabet size greater then 2 BFS
 	// p_{i,j} and p_{i+1,j} and m_{j,i,c_k} => !m_{j,i+1,c_(k-q)}
@@ -542,7 +528,6 @@ public class DimacsFileGenerator {
 				}
 			}
 		}
-		buffer.flush();
 	}
 
 	// if alphabet size greater then 2 DFS
@@ -564,7 +549,6 @@ public class DimacsFileGenerator {
 				}
 			}
 		}
-		buffer.flush();
 	}
 
 	// if alphabet size equal to 2 BFS
@@ -576,7 +560,6 @@ public class DimacsFileGenerator {
 				buffer.addClause(-p[i][j], -p[i + 1][j], y[j][i + 1].get("1"));
 			}
 		}
-		buffer.flush();
 	}
 
 	// if alphabet size equal to 2 DFS
@@ -590,7 +573,6 @@ public class DimacsFileGenerator {
 				}
 			}
 		}
-		buffer.flush();
 	}
 
 	// p_{i,j} => !p_{i+1,j-q}
@@ -602,7 +584,6 @@ public class DimacsFileGenerator {
 				}
 			}
 		}
-		buffer.flush();
 	}
 
 	// p_{i,j} => !t_{i+k,j-q}
@@ -616,7 +597,6 @@ public class DimacsFileGenerator {
 				}
 			}
 		}
-		buffer.flush();
 	}
 
 	// p_{i,1} or ... or p_{i,i-1}
@@ -628,7 +608,6 @@ public class DimacsFileGenerator {
 			}
 			buffer.addClause(tmp);
 		}
-		buffer.flush();
 	}
 
 	private void printAcceptableCliqueSB(Buffer buffer) {
@@ -641,7 +620,6 @@ public class DimacsFileGenerator {
 				break;
 			}
 		}
-		buffer.flush();
 	}
 
 	private void printRejectableCliqueSB(Buffer buffer) {
@@ -654,7 +632,6 @@ public class DimacsFileGenerator {
 				break;
 			}
 		}
-		buffer.flush();
 	}
 
 //	// n_{q,1} \/ n_{q,2} \/ ... \/ n_{q,|V|}
@@ -668,8 +645,7 @@ public class DimacsFileGenerator {
 //			}
 //			buffer.addClause(sb);
 //		}
-//		buffer.flush();
-//	}
+// 	}
 //
 //	// ~n[q,i] \/ ~n[q,j]
 //	private void printOneAtMostInNoisy(Buffer buffer) {
@@ -684,7 +660,6 @@ public class DimacsFileGenerator {
 //				}
 //			}
 //		}
-//		buffer.flush();
 //	}
 //
 //	// n_{q,i} => ~n_{q+1,i-j}
@@ -700,7 +675,6 @@ public class DimacsFileGenerator {
 //				}
 //			}
 //		}
-//		buffer.flush();
 //	}
 
 	//n_{q,i} <=> o_{q,i} /\ ~o_{q,i+1}
@@ -717,7 +691,6 @@ public class DimacsFileGenerator {
 			buffer.addClause(oq.get(0));
 			buffer.addClause(-oq.get(ends.size()));
 		}
-		buffer.flush();
 	}
 
 	//o_{q,i} => o_{q,i-1}
@@ -728,7 +701,6 @@ public class DimacsFileGenerator {
 				buffer.addClause(-oq.get(i), oq.get(i - 1));
 			}
 		}
-		buffer.flush();
 	}
 
 	//o_{q,i} => o_{q+1,i+1}
@@ -738,7 +710,6 @@ public class DimacsFileGenerator {
 				buffer.addClause(-o.get(q).get(i), o.get(q + 1).get(i + 1));
 			}
 		}
-		buffer.flush();
 	}
 
 	// f_v <=> n_{1,v} \/ ... \/ n_{k, v}.
@@ -753,7 +724,6 @@ public class DimacsFileGenerator {
 			}
 			buffer.addClause(tmp);
 		}
-		buffer.flush();
 	}
 
 	// (f_v \/ ~x_{v,i} \/ z_i) /\ (f_w \/~x_{w,i} \/ ~z_i)
@@ -767,7 +737,6 @@ public class DimacsFileGenerator {
 				}
 			}
 		}
-		buffer.flush();
 	}
 
 	private void atMostOneBimander(Buffer buffer, int m, List<Integer> vars) {

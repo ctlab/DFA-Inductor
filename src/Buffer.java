@@ -1,13 +1,11 @@
 import java.io.PrintWriter;
 
 public class Buffer {
-	private StringBuilder sb;
 	private PrintWriter pw;
 	private int countClauses;
 
 	public Buffer(PrintWriter pw) {
 		this.pw = pw;
-		this.sb = new StringBuilder();
 		this.countClauses = 0;
 	}
 
@@ -15,47 +13,31 @@ public class Buffer {
 		if (!s.endsWith(" ")) {
 			s += " ";
 		}
-		s += "0\n";
-		sb.append(s);
+		s += "0";
+		pw.println(s);
 		countClauses++;
-		if (needFlush()) {
-			flush();
-		}
 	}
 
 	public void addClause(StringBuilder s) {
 		if (!s.substring(s.length() - 2).equals(" ")) {
 			s.append(" ");
 		}
-		s.append("0\n");
-		sb.append(s);
+		s.append("0");
+		pw.println(s);
 		countClauses++;
-		if (needFlush()) {
-			flush();
-		}
 	}
 
 	public void addClause(int... literals) {
+		StringBuilder sb = new StringBuilder();
 		for (int literal : literals) {
 			sb.append(literal).append(" ");
 		}
-		sb.append("0\n");
+		sb.append("0");
+		pw.println(sb);
 		countClauses++;
-		if (needFlush()) {
-			flush();
-		}
-	}
-
-	public void flush() {
-		pw.print(sb);
-		sb = new StringBuilder();
 	}
 
 	public int nClauses() {
 		return countClauses;
-	}
-
-	private boolean needFlush() {
-		return countClauses % 100000 == 0;
 	}
 }
