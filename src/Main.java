@@ -31,7 +31,7 @@ public class Main {
 	private String resultFilePath = "ans";
 
 	@Option(name = "--strategy", aliases = {"-sb"}, usage = "symmetry breaking strategy (0 - none, 1 - BFS, " +
-			"2 - DFS" + "3 - clique)", metaVar = "<SB strategy>")
+			"2 - DFS" + ", 3 - clique)", metaVar = "<SB strategy>")
 	private int SBStrategy = 1;
 
 	@Option(name = "--timeout", aliases = {"-t"}, usage = "timeout", metaVar = "<timeout>")
