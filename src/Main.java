@@ -58,6 +58,14 @@ public class Main {
 	@Option(name = "--find", aliases = {"-f"}, usage = "find COUNT or less", metaVar = "<find>")
 	private int findCount = 0;
 
+	@Option(name = "--iterativemode", aliases = {"-itm"}, usage = "iterative mode for findK; iterative SAT-solver" +
+			"should be used", metaVar = "<iterative mode>", hidden = true, handler = BooleanOptionHandler.class)
+	private boolean iterativeMode = false;
+
+	@Option(name = "--iterativesolver", aliases = {"-its"}, usage = "iterative solver",
+			metaVar = "<iterative solver>", hidden = true)
+	private boolean iterativeSolver = false;
+
 	@Option(name = "--loop", hidden = true, usage = "fixing free transitions into loop",
 			handler = BooleanOptionHandler.class)
 	private boolean loopMode = false;
@@ -151,9 +159,16 @@ public class Main {
 						DimacsFileGenerator dfg = new DimacsFileGenerator(apta, cg, colors, SBStrategy, p, dimacsFile, loopMode);
 						dfg.generateFile(amo);
 						logger.info("SAT problem in dimacs format successfully generated");
+						SATSolver solver = null;
 						do {
-							SATSolver solver = new SATSolver(apta, colors, dimacsFile,
-									(int) (timeout - ((System.currentTimeMillis() - fullStartTime)) / 1000.), externalSATSolver);
+							if (!(findAllMode && iterativeMode && curDFA > 1)) {
+								solver = new SATSolver(apta, colors, dimacsFile,
+										(int) (timeout - ((System.currentTimeMillis() - fullStartTime)) / 1000.),
+										externalSATSolver, iterativeMode, iterativeSolver);
+							}
+							if (solver == null) {
+								throw new NullPointerException("Something gone wrong with solver initialization.");
+							}
 							logger.info("SAT solver successfully initialized");
 
 							logger.info("Vars in the SAT problem: " + solver.nVars());
@@ -197,7 +212,8 @@ public class Main {
 								}
 							} else {
 								if (findAllMode && found) {
-									logger.info("No more automatons with " + colors + " colors were found! :(");
+									logger.info("No more automatons with " + colors + " colors were found! Total: "
+											+ (curDFA - 1) + ".");
 								} else {
 									logger.info("The automaton with " + colors + " colors wasn't found! :(");
 								}
@@ -245,11 +261,12 @@ public class Main {
 						if (solver.problemIsBacktrackinging()) {
 							found = true;
 							Set<Automaton> dfas = solver.getAnswer();
-							if (dfas.size() == 1) {
-								logger.info("The automaton" + " with " + colors + " colors was found! :)");
-							} else {
-								logger.info(dfas.size() + " automatons" + " with " + colors + " colors were found! :)");
+							for (Automaton automaton : dfas) {
+								String DFAnumber = " number " + String.valueOf(curDFA) + " ";
+								logger.info("The automaton" + DFAnumber + "with " + colors + " colors was found! :)");
 							}
+							logger.info("No more automatons with " + colors + " colors were found! Total: "
+									+ dfas.size() + ".");
 							logger.info("Execution time: " + (System.currentTimeMillis() - startTime) / 1000.);
 							for (Automaton automaton : dfas) {
 								String fullResultFilePath = resultFilePath;
