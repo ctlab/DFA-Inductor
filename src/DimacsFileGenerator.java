@@ -75,18 +75,18 @@ public class DimacsFileGenerator {
 		this.z = new int[colors];
 		for (int v = 0; v < vertices; v++) {
 			for (int i = 0; i < colors; i++) {
-				x[v][i] = maxVar++;
+				x[v][i] = newVariable();
 			}
 		}
 		for (int i = 0; i < colors; i++) {
-			z[i] = maxVar++;
+			z[i] = newVariable();
 		}
 
 		for (int i = 0; i < colors; i++) {
 			for (int j = 0; j < colors; j++) {
 				y[i][j] = new HashMap<>();
 				for (String label : alphabet) {
-					y[i][j].put(label, maxVar++);
+					y[i][j].put(label, newVariable());
 				}
 			}
 		}
@@ -95,14 +95,14 @@ public class DimacsFileGenerator {
 			this.e = new int[colors][colors];
 			for (int i = 0; i < colors; i++) {
 				for (int j = i + 1; j < colors; j++) {
-					e[i][j] = maxVar++;
+					e[i][j] = newVariable();
 				}
 			}
 
 			this.p = new int[colors][colors];
 			for (int i = 1; i < colors; i++) {
 				for (int j = 0; j < i; j++) {
-					p[i][j] = maxVar++;
+					p[i][j] = newVariable();
 				}
 			}
 
@@ -111,7 +111,7 @@ public class DimacsFileGenerator {
 				for (int j = i + 1; j < colors; j++) {
 					m[i][j] = new HashMap<>();
 					for (String label : alphabet) {
-						m[i][j].put(label, maxVar++);
+						m[i][j].put(label, newVariable());
 					}
 				}
 			}
@@ -133,7 +133,7 @@ public class DimacsFileGenerator {
 			for (int i = 0; i < noisySize; i++) {
 				n.add(new ArrayList<Integer>());
 				for (int v : ends) {
-					n.get(i).add(maxVar++);
+					n.get(i).add(newVariable());
 				}
 			}
 
@@ -141,14 +141,14 @@ public class DimacsFileGenerator {
 			for (int i = 0; i < noisySize; i++) {
 				o.add(new ArrayList<Integer>());
 				for (int v : ends) {
-					o.get(i).add(maxVar++);
+					o.get(i).add(newVariable());
 				}
-				o.get(i).add(maxVar++);
+				o.get(i).add(newVariable());
 			}
 
 			f = new ArrayList<>();
 			for (int v : ends) {
-				f.add(maxVar++);
+				f.add(newVariable());
 			}
 		}
 	}
@@ -760,7 +760,7 @@ public class DimacsFileGenerator {
 		//redundant vars
 		b = new int[k];
 		for (int i = 0; i < k; i++) {
-			b[i] = maxVar++;
+			b[i] = newVariable();
 		}
 		curGfrom = 0;
 		curGto = g;
@@ -814,4 +814,7 @@ public class DimacsFileGenerator {
 		}
 	}
 
+	private int newVariable() {
+		return maxVar++;
+	}
 }
