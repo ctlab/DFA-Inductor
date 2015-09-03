@@ -166,6 +166,9 @@ public class ConsistencyGraph {
 				last = anotherOne;
 				anotherOne = findNeighbourWithHighestDegree(
 						acceptableClique, last, true);
+				if (last == anotherOne) {
+					break;
+				}
 			}
 		}
 
@@ -189,6 +192,9 @@ public class ConsistencyGraph {
 				last = anotherOne;
 				anotherOne = findNeighbourWithHighestDegree(
 						rejectableClique, last, false);
+				if (last == anotherOne) {
+					break;
+				}
 			}
 		}
 	}
