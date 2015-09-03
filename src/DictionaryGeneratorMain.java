@@ -32,7 +32,7 @@ public class DictionaryGeneratorMain {
 	@Option(name = "--alphabet", aliases = {"-a"}, usage = "alphabet size", metaVar = "<alphabet size>")
 	private int alphabetSize = 2;
 
-	@Option(name = "--startlenght", aliases = {"-sl"}, usage = "length of the smallest generated word",
+	@Option(name = "--startlength", aliases = {"-sl"}, usage = "length of the smallest generated word",
 			metaVar = "<smallest word length>")
 	private int startLength = 3;
 
