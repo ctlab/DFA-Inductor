@@ -79,7 +79,7 @@ public class Main {
 
 	@Option(name = "--backtracking", aliases = {"-bt"}, usage = "using backtracking instead of SAT approach",
 			forbids = {"--strategy", "-sb", "--solver", "-sat", "--dimacs", "-d", "--atmostone", "-amo", "--percent",
-					"-p"})
+					"-p"}, handler = BooleanOptionHandler.class)
 	private boolean backtrackingMode;
 
 	@Argument(usage = "dictionary file", metaVar = "<file>", required = true)
