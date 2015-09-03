@@ -153,16 +153,16 @@ public class DimacsFileGenerator {
 		}
 	}
 
-	public String generateFile(boolean isBimander) throws IOException {
+	public String generateFile(int amo) throws IOException {
 		File tmp = new File(tmpFile);
 		try (PrintWriter tmpPW = new PrintWriter(tmp)) {
 			Buffer buffer = new Buffer(tmpPW);
 			try (PrintWriter pwDF = new PrintWriter(dimacsFile)) {
 
 				printOneAtLeast(buffer);
-				printOneAtMost(buffer, isBimander);
+				printAtMostOneX(buffer, amo);
 				printParentRelationIsSet(buffer);
-				printParentRelationAtMostOneColor(buffer, isBimander);
+				printParentRelationAtMostOneColor(buffer, amo);
 				printParentRelationAtLeastOneColor(buffer);
 				printParentRelationForces(buffer);
 
@@ -325,51 +325,30 @@ public class DimacsFileGenerator {
 
 	// each parent relation can target at most one color
 	// (!y_{i,h,a} or !y_{i,j,a}) where a in Alphabet, h < j
-	private void printParentRelationAtMostOneColor(Buffer buffer, boolean isBimander) {
-		if (isBimander) {
-			List<Integer> yList = new ArrayList<>();
-			for (String st : apta.getAlphabet()) {
-				for (int i = 0; i < colors; i++) {
-					yList.clear();
-					for (int j = 0; j < colors; j++) {
-						yList.add(y[i][j].get(st));
-					}
-					atMostOneBimander(buffer, (int) Math.ceil(Math.sqrt((double) colors)), yList);
+	private void printParentRelationAtMostOneColor(Buffer buffer, int amo) {
+		List<Integer> yList = new ArrayList<>();
+		for (String st : apta.getAlphabet()) {
+			for (int i = 0; i < colors; i++) {
+				yList.clear();
+				for (int j = 0; j < colors; j++) {
+					yList.add(y[i][j].get(st));
 				}
-			}
-		} else {
-			for (String st : apta.getAlphabet()) {
-				for (int i = 0; i < colors; i++) {
-					for (int j = 0; j < colors; j++) {
-						for (int h = 0; h < j; h++) {
-							buffer.addClause(-y[i][h].get(st), -y[i][j].get(st));
-						}
-					}
-				}
+				atMostOne(buffer, yList, amo);
 			}
 		}
 	}
 
-	// each vertex has at most one color
-	// (!x_{v,i} or !x_{v,j}) where i < j
-	private void printOneAtMost(Buffer buffer, boolean isBimander) {
-		if (isBimander && colors > 6) {
-			List<Integer> xList = new ArrayList<>();
-			for (int v = 0; v < vertices; v++) {
-				xList.clear();
-				for (int i : x[v]) {
-					xList.add(i);
-				}
-				atMostOneBimander(buffer, (int) Math.ceil(Math.sqrt((double) colors)), xList);
+		// each vertex has at most one color
+		// (!x_{v,i} or !x_{v,j}) where i < j
+
+	private void printAtMostOneX(Buffer buffer, int amo) {
+		List<Integer> xList = new ArrayList<>();
+		for (int v = 0; v < vertices; v++) {
+			xList.clear();
+			for (int i : x[v]) {
+				xList.add(i);
 			}
-		} else {
-			for (int v = 0; v < vertices; v++) {
-				for (int i = 0; i < colors; i++) {
-					for (int j = i + 1; j < colors; j++) {
-						buffer.addClause(-x[v][i], -x[v][j]);
-					}
-				}
-			}
+			atMostOne(buffer, xList, amo);
 		}
 	}
 
@@ -739,7 +718,134 @@ public class DimacsFileGenerator {
 		}
 	}
 
-	private void atMostOneBimander(Buffer buffer, int m, List<Integer> vars) {
+	private void atMostOne(Buffer buffer, List<Integer> vars, int amo) {
+		switch (amo) {
+			case 1:
+				atMostOnePairwise(buffer, vars);
+				break;
+			case 2:
+				atMostOneBinary(buffer, vars);
+				break;
+			case 3:
+				atMostOneCommander(buffer, vars, (int) Math.ceil(Math.sqrt((double) colors)));
+				break;
+			case 4:
+				atMostOneCommander(buffer, vars, (colors + 1) / 2);
+				break;
+			case 5:
+				atMostOneProduct(buffer, vars);
+				break;
+			case 6:
+				atMostOneSequential(buffer, vars);
+				break;
+			case 7:
+				atMostOneBimander(buffer, vars, (int) Math.ceil(Math.sqrt((double) colors)));
+				break;
+			case 8:
+				atMostOneBimander(buffer, vars, (colors + 1) / 2);
+				break;
+		}
+	}
+
+	private void atMostOnePairwise(Buffer buffer, List<Integer> vars) {
+		int n = vars.size();
+		for (int i = 0; i < n; i++) {
+			for (int j = i + 1; j < n; j++) {
+				buffer.addClause(-vars.get(i), -vars.get(j));
+			}
+		}
+	}
+
+	private void atMostOneBinary(Buffer buffer, List<Integer> vars) {
+		int n = vars.size();
+		int k = log2(n);
+		int[] b = new int[k];
+		for (int i = 0; i < k; i++) {
+			b[i] = newVariable();
+		}
+		BitMask bm = new BitMask(k);
+		for (int i = 0; i < n; i++) {
+			for (int j = 0; j < k; j++) {
+				int sign = bm.get(j) ? 1 : -1;
+				buffer.addClause(-vars.get(i), sign * b[j]);
+			}
+			bm.next();
+		}
+	}
+
+	private void atMostOneCommander(Buffer buffer, List<Integer> vars, int m) {
+		int n = vars.size();
+		int g = (int) Math.ceil((double) n / m);
+		int[] c = new int[m];
+		for (int i = 0; i < m; i++) {
+			c[i] = newVariable();
+		}
+		int curGfrom = 0;
+		int curGto = g;
+		int j = 0;
+		while (curGfrom != n) {
+			StringBuilder alo = new StringBuilder();
+			List<Integer> amo = new ArrayList<>();
+			for (int i = curGfrom; i < curGto; i++) {
+				alo.append(vars.get(i)).append(" ");
+				amo.add(vars.get(i));
+			}
+			alo.append(-c[j]);
+			amo.add(-c[j]);
+			buffer.addClause(alo);
+			atMostOnePairwise(buffer, amo);
+			curGfrom = curGto;
+			curGto = Math.min(curGto + g, n);
+			j++;
+		}
+	}
+
+	private void atMostOneProduct(Buffer buffer, List<Integer> vars) {
+		int n = vars.size();
+		int uSize = (int) Math.sqrt(n);
+		int vSize = uSize;
+		while (uSize * vSize < n) {
+			vSize++;
+		}
+		List<Integer> u = new ArrayList<>();
+		List<Integer> v = new ArrayList<>();
+
+		for (int i = 0; i < uSize; i++) {
+			u.add(newVariable());
+		}
+		for (int i = 0; i < vSize; i++) {
+			v.add(newVariable());
+		}
+
+		atMostOnePairwise(buffer, u);
+		atMostOnePairwise(buffer, v);
+		for (int i = 0; i < uSize; i++) {
+			for (int j = 0; j < vSize; j++) {
+				if (j * uSize + i > n - 1) {
+					break;
+				}
+				buffer.addClause(-vars.get(j * uSize + i), u.get(i));
+				buffer.addClause(-vars.get(j * uSize + i), v.get(j));
+			}
+		}
+	}
+
+	private void atMostOneSequential(Buffer buffer, List<Integer> vars) {
+		int n = vars.size();
+		int[] s = new int[n - 1];
+		for (int i = 0; i < s.length; i++) {
+			s[i] = newVariable();
+		}
+		buffer.addClause(-vars.get(0), s[0]);
+		buffer.addClause(-vars.get(n - 1), -s[n - 2]);
+		for (int i = 1; i < n - 1; i++) {
+			buffer.addClause(-vars.get(i), s[i]);
+			buffer.addClause(-s[i - 1], s[i]);
+			buffer.addClause(-vars.get(i), -s[i - 1]);
+		}
+	}
+
+	private void atMostOneBimander(Buffer buffer, List<Integer> vars, int m) {
 		int n = vars.size();
 		int g = (int) Math.ceil((double) n / m);
 		int[] b;
@@ -807,10 +913,6 @@ public class DimacsFileGenerator {
 
 		boolean get(int i) {
 			return ar[i];
-		}
-
-		void clear() {
-			ar = new boolean[n];
 		}
 	}
 
