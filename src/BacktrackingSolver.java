@@ -1,3 +1,5 @@
+import org.sat4j.specs.TimeoutException;
+
 import java.util.*;
 
 public class BacktrackingSolver {
@@ -17,7 +19,7 @@ public class BacktrackingSolver {
 		this.findAllMode = findAllMode;
 	}
 
-	public boolean problemIsBacktrackinging() {
+	public boolean problemIsBacktrackinging() throws TimeoutException {
 		List<Transition> frontier = frontierInit();
 		Automaton automaton = new Automaton(size);
 		answer = backtracking(automaton, frontier);
@@ -28,10 +30,11 @@ public class BacktrackingSolver {
 		return answer;
 	}
 
-	private Set<Automaton> backtracking(Automaton automaton, List<Transition> frontier) {
+	private Set<Automaton> backtracking(Automaton automaton, List<Transition> frontier) throws TimeoutException {
 		Set<Automaton> automatons = new HashSet<>();
 		if ((System.currentTimeMillis() - startTime) / 1000. > timeout) {
-			return automatons;
+			throw new TimeoutException();
+			//return automatons;
 		}
 		Transition tr = frontier.get(0);
 		for (int destination = 0; destination < size; destination++) {
@@ -76,14 +79,16 @@ public class BacktrackingSolver {
 		Set<Automaton> ans = new HashSet<>();
 		Automaton newAutomaton = new Automaton(automaton);
 		boolean complete = true;
-		for (Node node : automaton.getStates()) {
+		for (Node node : newAutomaton.getStates()) {
 			for (String label : apta.getAlphabet()) {
 				if (node.getChild(label) == null) {
 					complete = false;
-					for (int i = 0; i < newAutomaton.size(); i++) {
-						node.addChild(label, newAutomaton.getState(i));
-						ans.addAll(makeComplete(newAutomaton));
-					}
+//					for (int i = 0; i < newAutomaton.size(); i++) {
+//						node.addChild(label, newAutomaton.getState(i));q
+//						ans.addAll(makeComplete(newAutomaton));
+//					}
+					node.addChild(label, node);
+					ans.add(newAutomaton);
 				}
 			}
 		}
