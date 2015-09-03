@@ -33,6 +33,7 @@ public class DimacsFileGenerator {
 	private Set<String> alphabet;
 	private int[][] x;
 	private Map<String, Integer>[][] y;
+	private Map<String, Integer>[] u;
 	private int[] z;
 	private int[][] e;
 	private Map<String, Integer>[][] m;
@@ -49,16 +50,21 @@ public class DimacsFileGenerator {
 	private Set<Integer> rejectableClique;
 	private int color = 0;
 	private List<Integer> ends;
-
+	private boolean fixMode;
 
 	public DimacsFileGenerator(APTA apta, ConsistencyGraph cg, int colors,
 	                           int SB, int noisyP, String dimacsFile) throws IOException {
-		init(apta, cg, colors, getSBStrategyByNum(SB), noisyP, dimacsFile);
+		init(apta, cg, colors, getSBStrategyByNum(SB), noisyP, dimacsFile, false);
+	}
+
+	public DimacsFileGenerator(APTA apta, ConsistencyGraph cg, int colors,
+	                           int SB, int noisyP, String dimacsFile, boolean fixMode) throws IOException {
+		init(apta, cg, colors, getSBStrategyByNum(SB), noisyP, dimacsFile, fixMode);
 	}
 
 	@SuppressWarnings("unchecked")
 	private void init(APTA apta, ConsistencyGraph cg, int colors,
-	                  SBStrategy SB, int noisyP, String dimacsFile) throws IOException {
+	                  SBStrategy SB, int noisyP, String dimacsFile, boolean fixMode) throws IOException {
 		this.apta = apta;
 		this.cg = cg;
 		this.colors = colors;
@@ -69,6 +75,7 @@ public class DimacsFileGenerator {
 		this.dimacsFile = dimacsFile;
 		this.alphabet = apta.getAlphabet();
 		this.ends = new ArrayList<>();
+		this.fixMode = fixMode;
 
 		this.x = new int[vertices][colors];
 		this.y = new HashMap[colors][colors];
@@ -87,6 +94,16 @@ public class DimacsFileGenerator {
 				y[i][j] = new HashMap<>();
 				for (String label : alphabet) {
 					y[i][j].put(label, newVariable());
+				}
+			}
+		}
+
+		if (fixMode) {
+			this.u = new HashMap[colors];
+			for (int i = 0; i < colors; i++) {
+				u[i] = new HashMap<>();
+				for (String label : alphabet) {
+					u[i].put(label, newVariable());
 				}
 			}
 		}
@@ -165,6 +182,11 @@ public class DimacsFileGenerator {
 				printParentRelationAtMostOneColor(buffer, amo);
 				printParentRelationAtLeastOneColor(buffer);
 				printParentRelationForces(buffer);
+
+				if (fixMode) {
+					printUDefinition(buffer);
+					printLoopFix(buffer);
+				}
 
 				if (SB == SBStrategy.BFS_SB || SB == SBStrategy.DFS_SB) {
 					//  root has 0 color
@@ -397,6 +419,34 @@ public class DimacsFileGenerator {
 			}
 		}
 	}
+
+	//fixing in loop
+
+	// u_{l,i} <=> x_{v_1,i} or ... or x_{v_|V_{l}|,i}, where v_j in V_{l}
+	private void printUDefinition(Buffer buffer) {
+		for (int i = 0; i < colors; i++) {
+			for (String label : alphabet) {
+				Set<Integer> vl = apta.getVl(label);
+				int uli = u[i].get(label);
+				StringBuilder tmp = new StringBuilder(-uli + " ");
+				for (int vi : vl) {
+					buffer.addClause(uli, -x[vi][i]);
+					tmp.append(x[vi][i]).append(" ");
+				}
+				buffer.addClause(tmp);
+			}
+		}
+	}
+
+	// !u_{l,i} => y_{l,i,i}
+	private void printLoopFix(Buffer buffer) {
+		for (int i = 0; i < colors; i++) {
+			for (String label : alphabet) {
+				buffer.addClause(u[i].get(label), y[i][i].get(label));
+			}
+		}
+	}
+
 
 	// SBP
 

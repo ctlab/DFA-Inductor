@@ -14,6 +14,7 @@ public class APTA {
 	private Set<Integer> acceptableNodes;
 	private Set<Integer> rejectableNodes;
 	private Map<Integer, Node> indexesOfNodes;
+	private Map<String, Set<Integer>> vlset;
 
 	private StringTokenizer st = null;
 
@@ -21,6 +22,7 @@ public class APTA {
 		acceptableNodes = new HashSet<>();
 		rejectableNodes = new HashSet<>();
 		indexesOfNodes = new HashMap<>();
+		vlset = new HashMap<>();
 		alphabet = new HashSet<>();
 		size = 0;
 		root = new Node(size);
@@ -33,6 +35,7 @@ public class APTA {
 			acceptableNodes = new HashSet<>();
 			rejectableNodes = new HashSet<>();
 			indexesOfNodes = new HashMap<>();
+			vlset = new HashMap<>();
 			alphabet = new HashSet<>();
 
 			int lines = nextInt(br);
@@ -51,10 +54,14 @@ public class APTA {
 				int len = nextInt(br);
 				for (int i = 0; i < len; i++) {
 					label = nextToken(br);
-					alphabet.add(label);
+					if (!alphabet.contains(label)) {
+						alphabet.add(label);
+						vlset.put(label, new HashSet<Integer>());
+					}
 					if (currentNode.getChildren().containsKey(label)) {
 						currentNode = currentNode.getChildren().get(label);
 					} else {
+						vlset.get(label).add(currentNode.getNumber());
 						newNode = new Node(size, label, currentNode);
 						indexesOfNodes.put(size++, newNode);
 						currentNode.addChild(label, newNode);
@@ -107,6 +114,10 @@ public class APTA {
 
 	public Set<String> getAlphabet() {
 		return alphabet;
+	}
+
+	public Set<Integer> getVl(String label) {
+		return vlset.get(label);
 	}
 
 	// node can be null

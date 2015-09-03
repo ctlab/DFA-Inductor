@@ -58,6 +58,10 @@ public class Main {
 	@Option(name = "--find", aliases = {"-f"}, usage = "find COUNT or less", metaVar = "<find>")
 	private int findCount = 0;
 
+	@Option(name = "--loop", hidden = true, usage = "fixing free transitions into loop",
+			handler = BooleanOptionHandler.class)
+	private boolean loopMode = false;
+
 	@Option(name = "--atmostone", aliases = {"-amo"}, usage = "at most one constraints encoding." +
 			"1 - pairwise, 2 - binary, 3 - commander where m=sqrt(n)," +
 			"4 - commander where m=n/2, 5 - product, 6 - sequential," +
@@ -91,6 +95,7 @@ public class Main {
 
 		boolean noisyMode = p > 0;
 		findAllMode |= findCount > 0;
+		loopMode |= findAllMode;
 		if (SBStrategy == 3 && noisyMode) {
 			System.err.println("You can't use CLIQUE symmetry breaking strategy during solving " +
 					"noisy DFA building problem");
