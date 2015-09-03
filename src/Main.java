@@ -58,9 +58,12 @@ public class Main {
 	@Option(name = "--find", aliases = {"-f"}, usage = "find COUNT or less", metaVar = "<find>")
 	private int findCount = 0;
 
-	@Option(name = "--atmostone", aliases = {"-amo"}, usage = "bimander or pairwise at most one, pairwise by default",
+	@Option(name = "--atmostone", aliases = {"-amo"}, usage = "at most one constraints encoding." +
+			"1 - pairwise, 2 - binary, 3 - commander where m=sqrt(n)," +
+			"4 - commander where m=n/2, 5 - product, 6 - sequential," +
+			"7 - bimander where m=sqrt(n), 8 - bimander where m=n/2",
 			metaVar = "<amo>")
-	private boolean isBimander;
+	private int amo = 1;
 
 	@Option(name = "--backtracking", aliases = {"-bt"}, usage = "using backtracking instead of SAT approach",
 			forbids = {"--strategy", "-sb", "--solver", "-sat", "--dimacs", "-d", "--atmostone", "-amo", "--percent",
@@ -140,8 +143,8 @@ public class Main {
 							}
 							break;
 						}
-						DimacsFileGenerator dfg = new DimacsFileGenerator(apta, cg, colors, SBStrategy, p, dimacsFile);
-						dfg.generateFile(isBimander);
+						DimacsFileGenerator dfg = new DimacsFileGenerator(apta, cg, colors, SBStrategy, p, dimacsFile, loopMode);
+						dfg.generateFile(amo);
 						logger.info("SAT problem in dimacs format successfully generated");
 						do {
 							SATSolver solver = new SATSolver(apta, colors, dimacsFile,
