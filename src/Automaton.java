@@ -44,7 +44,7 @@ public class Automaton {
 		this.states.add(this.start);
 
 		try (BufferedReader automatonBR = new BufferedReader(new FileReader(file))) {
-			Pattern transitionPattern = Pattern.compile("\\s+(\\d+) -> (\\d+) \\[label = \\\"([a-zA-Z0-9-_])\\\"\\];");
+			Pattern transitionPattern = Pattern.compile("\\s+(\\d+) -> (\\d+) \\[label = \\\"([a-zA-Z0-9-_]+)\\\"\\];");
 			Pattern acceptingPattern = Pattern.compile("\\s+(\\d+) \\[peripheries=2\\]");
 
 			String line;
