@@ -1,7 +1,6 @@
 package structures;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 public class Node {
 
@@ -11,39 +10,70 @@ public class Node {
 
 	private int number;
 	private Map<String, Node> children;
-	private Map<String, Node> parents;
+	private Map<String, Set<Node>> parents;
 	private Status status;
+	private Status statusBackup;
+	private int depth;
+	private int acceptingPathsSum;
+	private Map<String, Integer> acceptingPaths;
 
 	public Node(int number) {
+		init(number, 0);
+	}
+
+	public Node(int number, int depth) {
+		init(number, depth);
+	}
+
+	public Node(int number, int depth, String label, Node parent) {
+		init(number, depth);
+		addParent(label, parent);
+	}
+
+	private void init(int number, int depth) {
 		this.number = number;
+		this.depth = depth;
+		this.acceptingPathsSum = 0;
+		this.acceptingPaths = new HashMap<>();
 		this.children = new HashMap<>();
 		this.parents = new HashMap<>();
 		this.status = Status.COMMON;
 	}
 
-	public Node(int number, Status status) {
-		this.number = number;
-		this.children = new HashMap<>();
-		this.parents = new HashMap<>();
-		this.status = status;
+	public void backup() {
+		statusBackup = status;
 	}
 
-	public Node(int number, String label, Node parent) {
-		this.number = number;
-		this.children = new HashMap<>();
-		this.parents = new HashMap<>();
-		this.parents.put(label, parent);
-		parent.children.put(label, this);
-		this.status = Status.COMMON;
+	public void restore() {
+		status = statusBackup;
 	}
 
-	public Node(int number, String label, Node parent, Status status) {
-		this.number = number;
-		this.children = new HashMap<>();
-		this.parents = new HashMap<>();
-		this.parents.put(label, parent);
-		parent.children.put(label, this);
-		this.status = status;
+	public int getDepth() {
+		return depth;
+	}
+
+	public void setDepth(int depth) {
+		this.depth = depth;
+	}
+
+	public int getAcceptingPathsSum() {
+		return acceptingPathsSum;
+	}
+
+	public Map<String, Integer> getAcceptingPaths() {
+		return acceptingPaths;
+	}
+
+	public void addAcceptingPath(String label) {
+		addAcceptingPath(label, 1);
+	}
+
+	public void addAcceptingPath(String label, int k) {
+		acceptingPathsSum++;
+		if (!acceptingPaths.containsKey(label)) {
+			acceptingPaths.put(label, 0);
+		}
+		acceptingPaths.put(label, acceptingPaths.get(label) + k);
 	}
 
 	public int getNumber() {
@@ -66,11 +96,11 @@ public class Node {
 		this.status = status;
 	}
 
-	public Map<String, Node> getParents() {
+	public Map<String, Set<Node>> getParents() {
 		return parents;
 	}
 
-	public Node getParent(String s) {
+	public Set<Node> getParentByLabel(String s) {
 		return parents.containsKey(s) ? parents.get(s) : null;
 	}
 
@@ -84,11 +114,14 @@ public class Node {
 
 	public void addChild(String s, Node child) {
 		children.put(s, child);
-		child.parents.put(s, this);
+		child.addParent(s, this);
 	}
 
 	public void addParent(String s, Node parent) {
-		parents.put(s, parent);
-		parent.children.put(s, this);
+		if (!parents.containsKey(s)) {
+			parents.put(s, new HashSet<Node>());
+		}
+		parents.get(s).add(parent);
+		parent.addChild(s, this);
 	}
 }

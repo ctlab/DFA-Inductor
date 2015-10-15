@@ -344,9 +344,10 @@ public class DimacsFileGenerator {
 			for (int i = 0; i < colors; i++) {
 				for (int j = 0; j < colors; j++) {
 					Node cur = apta.getNode(v);
-					for (Entry<String, Node> e : cur.getParents().entrySet()) {
-						buffer.addClause(y[i][j].get(e.getKey()), -x[e
-								.getValue().getNumber()][i], -x[v][j]);
+					for (Entry<String, Set<Node>> e : cur.getParents().entrySet()) {
+						for (Node parent : e.getValue()) {
+							buffer.addClause(y[i][j].get(e.getKey()), -x[parent.getNumber()][i], -x[v][j]);
+						}
 					}
 				}
 			}
@@ -403,9 +404,10 @@ public class DimacsFileGenerator {
 			for (int i = 0; i < colors; i++) {
 				for (int j = 0; j < colors; j++) {
 					Node cur = apta.getNode(v);
-					for (Entry<String, Node> e : cur.getParents().entrySet()) {
-						buffer.addClause(-y[i][j].get(e.getKey()), -x[e
-								.getValue().getNumber()][i], x[v][j]);
+					for (Entry<String, Set<Node>> e : cur.getParents().entrySet()) {
+						for (Node parent : e.getValue()) {
+							buffer.addClause(-y[i][j].get(e.getKey()), -x[parent.getNumber()][i], x[v][j]);
+						}
 					}
 				}
 			}

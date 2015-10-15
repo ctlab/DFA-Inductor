@@ -27,7 +27,7 @@ public class APTA {
 		vlset = new HashMap<>();
 		alphabet = new HashSet<>();
 		size = 0;
-		root = new Node(size);
+		root = new Node(size, 1);
 		indexesOfNodes.put(size++, root);
 	}
 
@@ -44,18 +44,24 @@ public class APTA {
 			words = lines;
 			int alphaSize = nextInt(br);
 			this.alphaSize = alphaSize;
-			root = new Node(size);
+			root = new Node(size, 1);
 			indexesOfNodes.put(size++, root);
 
 			Node currentNode;
 			Node newNode;
 			String label;
+			int depth;
 			for (int line = 0; line < lines; line++) {
 				currentNode = root;
+				depth = 1;
 				int status = nextInt(br);
 				int len = nextInt(br);
 				for (int i = 0; i < len; i++) {
+					depth++;
 					label = nextToken(br);
+					if (i < len - 1 && status == 1) {
+						currentNode.addAcceptingPath(label);
+					}
 					if (!alphabet.contains(label)) {
 						alphabet.add(label);
 						vlset.put(label, new HashSet<Integer>());
@@ -64,7 +70,7 @@ public class APTA {
 						currentNode = currentNode.getChildren().get(label);
 					} else {
 						vlset.get(label).add(currentNode.getNumber());
-						newNode = new Node(size, label, currentNode);
+						newNode = new Node(size, depth, label, currentNode);
 						indexesOfNodes.put(size++, newNode);
 						currentNode.addChild(label, newNode);
 						currentNode = newNode;

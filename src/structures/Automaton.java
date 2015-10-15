@@ -23,8 +23,9 @@ public class Automaton {
 			for (Map.Entry<String, Node> entry : otherNode.getChildren().entrySet()) {
 				thisNode.addChild(entry.getKey(), this.states.get(entry.getValue().getNumber()));
 			}
-			for (Map.Entry<String, Node> entry : otherNode.getParents().entrySet()) {
-				thisNode.addParent(entry.getKey(), this.states.get(entry.getValue().getNumber()));
+			for (Map.Entry<String, Set<Node>> entry : otherNode.getParents().entrySet()) {
+				for (Node parent : entry.getValue())
+				thisNode.addParent(entry.getKey(), this.states.get(parent.getNumber()));
 			}
 		}
 	}
@@ -95,16 +96,6 @@ public class Automaton {
 
 		fromNode.addChild(label, toNode);
 		toNode.addParent(label, fromNode);
-	}
-
-	public void addChildren(int num, Map<String, Node> children) {
-		Node numNode = states.get(num);
-		numNode.getChildren().putAll(children);
-	}
-
-	public void addParents(int num, Map<String, Node> children) {
-		Node numNode = states.get(num);
-		numNode.getParents().putAll(children);
 	}
 
 	public Node.Status proceedWord(List<String> word) {
