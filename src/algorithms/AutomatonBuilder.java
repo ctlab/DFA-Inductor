@@ -1,3 +1,9 @@
+package algorithms;
+
+import structures.APTA;
+import structures.Automaton;
+import structures.Node;
+
 import java.util.HashMap;
 import java.util.Map;
 

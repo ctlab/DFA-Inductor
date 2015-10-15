@@ -1,6 +1,8 @@
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
+import structures.Automaton;
+import structures.Node;
 
 import java.io.File;
 import java.io.FileNotFoundException;

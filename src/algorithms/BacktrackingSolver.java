@@ -1,3 +1,9 @@
+package algorithms;
+
+import structures.APTA;
+import structures.Automaton;
+import structures.Node;
+
 import org.sat4j.specs.TimeoutException;
 
 import java.util.*;

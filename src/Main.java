@@ -1,3 +1,11 @@
+import algorithms.AutomatonBuilder;
+import algorithms.BacktrackingSolver;
+import algorithms.DimacsFileGenerator;
+import algorithms.SATSolver;
+import structures.APTA;
+import structures.Automaton;
+import structures.ConsistencyGraph;
+
 import org.kohsuke.args4j.Argument;
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;

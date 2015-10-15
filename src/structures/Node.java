@@ -1,9 +1,11 @@
+package structures;
+
 import java.util.HashMap;
 import java.util.Map;
 
 public class Node {
 
-	enum Status {
+	public enum Status {
 		ACCEPTABLE, COMMON, REJECTABLE
 	}
 

@@ -1,3 +1,11 @@
+package algorithms;
+
+import misc.Buffer;
+import structures.APTA;
+import structures.Automaton;
+import structures.ConsistencyGraph;
+import structures.Node;
+
 import java.io.*;
 import java.util.*;
 import java.util.Map.Entry;

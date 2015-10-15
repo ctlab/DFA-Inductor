@@ -1,3 +1,7 @@
+package algorithms;
+
+import structures.APTA;
+
 import org.sat4j.minisat.SolverFactory;
 import org.sat4j.reader.DimacsReader;
 import org.sat4j.reader.ParseFormatException;

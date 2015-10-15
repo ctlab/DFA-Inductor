@@ -1,3 +1,5 @@
+package misc;
+
 import java.io.PrintWriter;
 
 public class Buffer {
