@@ -59,8 +59,12 @@ public class APTA {
 				for (int i = 0; i < len; i++) {
 					depth++;
 					label = nextToken(br);
-					if (i < len - 1 && status == 1) {
-						currentNode.addAcceptingPath(label);
+					if (i < len - 1) {
+						if (status == 1) {
+							currentNode.addAcceptingPath(label);
+						} else {
+							currentNode.addRejectingPath(label);
+						}
 					}
 					if (!alphabet.contains(label)) {
 						alphabet.add(label);

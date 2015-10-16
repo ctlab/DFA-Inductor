@@ -14,8 +14,12 @@ public class Node {
 	private Status status;
 	private Status statusBackup;
 	private int depth;
+	private int depthBackup;
 	private int acceptingPathsSum;
+	private int rejectingPathsSum;
 	private Map<String, Integer> acceptingPaths;
+	private Map<String, Integer> rejectingPaths;
+	private Node representative;
 
 	public Node(int number) {
 		init(number, 0);
@@ -33,19 +37,23 @@ public class Node {
 	private void init(int number, int depth) {
 		this.number = number;
 		this.depth = depth;
+		this.depthBackup = depth;
 		this.acceptingPathsSum = 0;
 		this.acceptingPaths = new HashMap<>();
 		this.children = new HashMap<>();
 		this.parents = new HashMap<>();
 		this.status = Status.COMMON;
+		this.representative = this;
 	}
 
 	public void backup() {
 		statusBackup = status;
+		depthBackup = depth;
 	}
 
 	public void restore() {
 		status = statusBackup;
+		depth = depthBackup;
 	}
 
 	public int getDepth() {
@@ -60,8 +68,24 @@ public class Node {
 		return acceptingPathsSum;
 	}
 
+	public int getRejectingPathsSum() {
+		return rejectingPathsSum;
+	}
+
+	public void setAcceptingPathsSum(int acceptingPathsSum) {
+		this.acceptingPathsSum = acceptingPathsSum;
+	}
+
+	public void setRejectingPathsSum(int rejectingPathsSum) {
+		this.rejectingPathsSum = rejectingPathsSum;
+	}
+
 	public Map<String, Integer> getAcceptingPaths() {
 		return acceptingPaths;
+	}
+
+	public Map<String, Integer> getRejectingPaths() {
+		return rejectingPaths;
 	}
 
 	public void addAcceptingPath(String label) {
@@ -75,6 +99,19 @@ public class Node {
 		}
 		acceptingPaths.put(label, acceptingPaths.get(label) + k);
 	}
+
+	public void addRejectingPath(String label) {
+		addRejectingPath(label, 1);
+	}
+
+	public void addRejectingPath(String label, int k) {
+		rejectingPathsSum++;
+		if (!rejectingPaths.containsKey(label)) {
+			rejectingPaths.put(label, 0);
+		}
+		rejectingPaths.put(label, rejectingPaths.get(label) + k);
+	}
+
 
 	public int getNumber() {
 		return number;
@@ -123,5 +160,15 @@ public class Node {
 		}
 		parents.get(s).add(parent);
 		parent.addChild(s, this);
+	}
+
+	public Node findRepresentative() {
+		Node rep = this.representative;
+		while (rep != rep.findRepresentative());
+		return rep;
+	}
+
+	public void setRepresentative(Node representative) {
+		this.representative = representative;
 	}
 }
