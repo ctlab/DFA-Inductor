@@ -15,9 +15,12 @@ public class EDSMWorker {
 	private Set<Node> redNodes;
 	private Set<Node> blueNodes;
 	private EDSMMerger merger;
-	private boolean randomMode;
 
-	public EDSMWorker(APTA apta, EDSMHeuristic heuristic, boolean randomMode) {
+	private final boolean randomMode;
+	private final int positiveSizeBound;
+
+	public EDSMWorker(APTA apta, EDSMHeuristic heuristic, boolean randomMode,
+	                  int positiveSizeBound) {
 		this.apta = apta;
 		switch (heuristic) {
 			case Status:
@@ -30,16 +33,23 @@ public class EDSMWorker {
 		redNodes = new HashSet<>();
 		blueNodes = new HashSet<>();
 		initRedBlue();
+
 		this.randomMode = randomMode;
+		this.positiveSizeBound = positiveSizeBound;
 	}
 
 	public boolean startMerging() {
 		//TODO: do while big enough
-		MergePair mergePair = findBestMerge();
-		if (mergePair.score < 0) {
-			updateRedBlue(mergePair.blue);
-		} else {
-			merge(mergePair);
+		while (true) {
+			if (apta.getRoot().getAcceptingPathsSum() < positiveSizeBound) {
+				break;
+			}
+			MergePair mergePair = findBestMerge();
+			if (mergePair.score < 0) {
+				updateRedBlue(mergePair.blue);
+			} else {
+				merge(mergePair);
+			}
 		}
 		// wrong!
 		return true;
@@ -78,13 +88,13 @@ public class EDSMWorker {
 		Node red = pair.red;
 		Node blue = pair.blue;
 		merger.resetScore();
-		merger.merge(red, blue);
+		merger.merge(red, blue, true);
 		return merger.getScore();
 	}
 
 	private int mergeAndUndo(Node red, Node blue) {
 		merger.resetScore();
-		merger.merge(red, blue);
+		merger.merge(red, blue, false);
 		int res = merger.getScore();
 		merger.undoMerge(red, blue);
 		return res;

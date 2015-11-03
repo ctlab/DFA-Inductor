@@ -11,16 +11,18 @@ public abstract class EDSMMerger {
 
 	protected int score;
 	protected List<String> alphabet;
+	private APTA apta;
 
-	public EDSMMerger(List<String> alphabet) {
+	public EDSMMerger(List<String> alphabet, APTA apta) {
 		this.alphabet = alphabet;
+		this.apta = apta;
 		score = 0;
 	}
 
 	protected abstract boolean isConsistent(Node red, Node blue);
 	protected abstract int scoreAdd(Node red, Node blue);
 
-	protected boolean merge(Node red, Node blue) {
+	protected boolean merge(Node red, Node blue, boolean finalMerge) {
 		if (!isConsistent(red, blue)) {
 			score = -blue.getDepth();
 			return false;
@@ -41,6 +43,10 @@ public abstract class EDSMMerger {
 		}
 		blue.setRepresentative(red);
 
+		if(finalMerge) {
+			apta.update(red, blue);
+		}
+
 		for (int i = 0; i < alphabet.size(); i++) {
 			String s = alphabet.get(i);
 			Node redChild = red.getChild(s);
@@ -51,11 +57,12 @@ public abstract class EDSMMerger {
 					blueChild.backup();
 					blueChild.setDepth(red.getDepth());
 					red.addChild(s, blueChild);
+					blueChild.getParents().get(s).remove(blue);
 				}
 			} else if (redChild != blueChild) {
 				redChild = redChild.findRepresentative();
 				blueChild = blueChild.findRepresentative();
-				if (!merge(redChild, blueChild)) {
+				if (!merge(redChild, blueChild, finalMerge)) {
 					return false;
 				}
 			}

@@ -117,6 +117,10 @@ public class Node {
 		return number;
 	}
 
+	void setNumber(int number) {
+		this.number = number;
+	}
+
 	public Status getStatus() {
 		return status;
 	}
@@ -151,7 +155,9 @@ public class Node {
 
 	public void addChild(String s, Node child) {
 		children.put(s, child);
-		child.addParent(s, this);
+		if (!child.getParents().containsKey(s) || !child.getParents().get(s).contains(this)) {
+			child.addParent(s, this);
+		}
 	}
 
 	public void addParent(String s, Node parent) {
@@ -159,7 +165,9 @@ public class Node {
 			parents.put(s, new HashSet<Node>());
 		}
 		parents.get(s).add(parent);
-		parent.addChild(s, this);
+		if (parent.getChild(s) == null || parent.getChild(s) != this) {
+			parent.addChild(s, this);
+		}
 	}
 
 	public Node findRepresentative() {

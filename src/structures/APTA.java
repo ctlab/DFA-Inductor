@@ -137,6 +137,58 @@ public class APTA {
 		return indexesOfNodes.get(i);
 	}
 
+	public void update(Node red, Node blue) {
+		if (red != blue) {
+			size--;
+			int includeNumber = Math.min(red.getNumber(), blue.getNumber());
+			int excludeNumber = Math.max(red.getNumber(), blue.getNumber());
+
+			red.setNumber(includeNumber);
+			indexesOfNodes.put(includeNumber, red);
+
+			if (acceptableNodes.contains(excludeNumber)) {
+				acceptableNodes.add(includeNumber);
+				acceptableNodes.remove(excludeNumber);
+			}
+			if (rejectableNodes.contains(excludeNumber)) {
+				rejectableNodes.add(includeNumber);
+				rejectableNodes.remove(excludeNumber);
+			}
+
+			for (int i = excludeNumber; i < size; i++) {
+				indexesOfNodes.get(i + 1).setNumber(i);
+				indexesOfNodes.put(i, indexesOfNodes.get(i + 1));
+				if (acceptableNodes.contains(i + 1)) {
+					acceptableNodes.add(i);
+					acceptableNodes.remove(i + 1);
+				}
+				if (rejectableNodes.contains(i + 1)) {
+					rejectableNodes.add(i);
+					rejectableNodes.remove(i + 1);
+				}
+			}
+
+			if (excludeNumber == blue.getNumber()) {
+				for (String label : blue.getChildren().keySet()) {
+					vlset.get(label).add(includeNumber);
+					vlset.get(label).remove(excludeNumber);
+				}
+			} else {
+				for (String label : red.getChildren().keySet()) {
+					vlset.get(label).add(includeNumber);
+					vlset.get(label).remove(excludeNumber);
+				}
+			}
+
+			for (Map.Entry<String, Set<Node>> e : blue.getParents().entrySet()) {
+				String label = e.getKey();
+				for (Node parent : e.getValue()) {
+					red.addParent(label, parent);
+				}
+			}
+		}
+	}
+
 	private String nextToken(BufferedReader br) throws IOException {
 		while (st == null || !st.hasMoreTokens()) {
 			String s = br.readLine();
