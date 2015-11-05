@@ -31,6 +31,43 @@ public class APTA {
 		indexesOfNodes.put(size++, root);
 	}
 
+
+	public APTA(APTA other) {
+		this.size = other.size;
+		this.words = other.words;
+		this.alphaSize = other.alphaSize;
+
+		this.alphabet = new HashSet<>(other.getAlphabet());
+		this.acceptableNodes = new HashSet<>(other.getRejectableNodes());
+		this.rejectableNodes = new HashSet<>(other.getRejectableNodes());
+		this.vlset = new HashMap<>(other.vlset);
+
+		this.root = new Node(0);
+		Node curNode = root;
+		copyNodes(curNode, root);
+	}
+
+	private void copyNodes(Node current, Node parallel) {
+		String label;
+		Node child;
+		Node newChild;
+		indexesOfNodes.put(parallel.getNumber(), current);
+		for (Map.Entry<String, Node> e: parallel.getChildren().entrySet()) {
+			label = e.getKey();
+			child = e.getValue();
+			newChild = new Node(child.getNumber(), child.getDepth());
+			current.addChild(label, newChild);
+
+			newChild.setAcceptingPathsSum(child.getAcceptingPathsSum());
+			newChild.setAcceptingPaths(child.getAcceptingPaths());
+			newChild.setRejectingPathsSum(child.getRejectingPathsSum());
+			newChild.setRejectingPaths(child.getRejectingPaths());
+			newChild.setStatus(child.getStatus());
+
+			copyNodes(newChild, child);
+		}
+	}
+
 	public APTA(InputStream is) throws IOException {
 		try (BufferedReader br = new BufferedReader(new InputStreamReader(is))) {
 			size = 0;

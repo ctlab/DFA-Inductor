@@ -88,6 +88,14 @@ public class Node {
 		return rejectingPaths;
 	}
 
+	public void setAcceptingPaths(Map<String, Integer> acceptingPaths) {
+		this.acceptingPaths = acceptingPaths;
+	}
+
+	public void setRejectingPaths(Map<String, Integer> rejectingPaths) {
+		this.rejectingPaths = rejectingPaths;
+	}
+
 	public void addAcceptingPath(String label) {
 		addAcceptingPath(label, 1);
 	}
