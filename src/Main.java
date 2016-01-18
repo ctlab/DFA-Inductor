@@ -1,3 +1,5 @@
+import EDSM.EDSMWorker;
+import EDSM.EDSMWorker.EDSMHeuristic;
 import algorithms.AutomatonBuilder;
 import algorithms.BacktrackingSolver;
 import algorithms.DimacsFileGenerator;
@@ -90,6 +92,29 @@ public class Main {
 					"-p"}, handler = BooleanOptionHandler.class)
 	private boolean backtrackingMode;
 
+	@Option(name = "--pathslowerbound", aliases = {"-plb"}, usage = "lower bound for accepting intersections" +
+			"of dictionary words with a node for fanout heuristic")
+	private int pathsLowerBound = 25;
+
+	@Option(name = "--symbolpathslowerbound", aliases = {"-splb"}, usage = "lower bound for accepting" +
+			"intersections of dictionary words with a node by")
+	private int pathsOnSymbolLowerBound = 10;
+
+	@Option(name = "--runs", usage = "number of EDSM runs", metaVar = "<runs>")
+	private int runs = 100;
+
+	@Option(name = "--heuristic", aliases = {"-h"}, usage = "heuristic function for EDSM: 0 - no EDSM," +
+			"1 - number of same status merges, 2 - overlap in fanout")
+	private int heuristic = 0;
+
+	@Option(name = "--aptabound", aliases = {"-ab"}, usage = "upper bound for states which are " +
+			"reachable with accepting strings")
+	private int positiveSizeBound = 2000;
+
+	@Option(name = "--randomgreedy", aliases = {"-random"}, usage = "random greedy mode; if it is not" +
+			"set - non-random greedy")
+	private boolean randomGreedy = false;
+
 	@Argument(usage = "dictionary file", metaVar = "<file>", required = true)
 	private String file;
 
@@ -107,6 +132,17 @@ public class Main {
 			System.err.println();
 			parser.printUsage(System.err);
 			return;
+		}
+
+		boolean EDSMMode = heuristic > 0;
+		EDSMHeuristic edsmHeuristic = null;
+		switch (heuristic) {
+			case 1:
+				edsmHeuristic = EDSMHeuristic.Status;
+				break;
+			case 2:
+				edsmHeuristic = EDSMHeuristic.Fanout;
+				break;
 		}
 
 		boolean noisyMode = p > 0;
@@ -141,6 +177,15 @@ public class Main {
 			logger.info("APTA size: " + apta.getSize());
 			logger.info("Ends in APTA: " + (apta.getAcceptableNodes().size() + apta.getRejectableNodes().size()));
 			logger.info("Count of words: " + apta.getCountOfWords());
+
+			if (EDSMMode) {
+				logger.info("EDSM greedy preprocessing started");
+				EDSMWorker worker = new EDSMWorker(apta, edsmHeuristic, randomGreedy, positiveSizeBound,
+						pathsLowerBound, pathsOnSymbolLowerBound);
+				worker.startMerging();
+				//TODO: logging about results of EDSM
+			}
+
 			if (!backtrackingMode) {
 				ConsistencyGraph cg = new ConsistencyGraph(apta, noisyMode);
 				if (!noisyMode) {
