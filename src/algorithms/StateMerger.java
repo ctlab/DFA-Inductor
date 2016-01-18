@@ -1,54 +1,51 @@
-package EDSM;
+package algorithms;
 
 import structures.APTA;
 import structures.Node;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
-public abstract class EDSMMerger {
+public abstract class StateMerger {
 
 	protected int score;
 	protected List<String> alphabet;
 	private APTA apta;
 
-	public EDSMMerger(List<String> alphabet, APTA apta) {
-		this.alphabet = alphabet;
+	public StateMerger(APTA apta) {
 		this.apta = apta;
+		alphabet = asSortedList(apta.getAlphabet());
 		score = 0;
 	}
 
 	protected abstract boolean isConsistent(Node red, Node blue);
 	protected abstract int scoreAdd(Node red, Node blue);
 
-	protected boolean merge(Node red, Node blue, boolean finalMerge) {
+	public boolean merge(Node red, Node blue, boolean finalMerge) {
 		if (!isConsistent(red, blue)) {
-			score = -blue.getDepth();
-			return false;
+			score = -1;
 		}
-		score += scoreAdd(red, blue);
+		if (score >= 0) {
+			score += scoreAdd(red, blue);
+		}
 		red.backup();
 		if (!red.isAcceptable() && !red.isRejectable()) {
 			red.setStatus(blue.getStatus());
 		}
 		red.setDepth(Math.min(red.getDepth(), blue.getDepth()));
-		red.setAcceptingPathsSum(red.getAcceptingPathsSum() + blue.getAcceptingPathsSum());
-		red.setRejectingPathsSum(red.getRejectingPathsSum() + blue.getRejectingPathsSum());
 		for (Map.Entry<String, Integer> e : blue.getAcceptingPaths().entrySet()) {
 			red.addAcceptingPath(e.getKey(), e.getValue());
 		}
 		for (Map.Entry<String, Integer> e : blue.getRejectingPaths().entrySet()) {
 			red.addRejectingPath(e.getKey(), e.getValue());
 		}
-		blue.setRepresentative(red);
 
 		if(finalMerge) {
 			apta.update(red, blue);
+		} else {
+			blue.setRepresentative(red);
 		}
 
-		for (int i = 0; i < alphabet.size(); i++) {
-			String s = alphabet.get(i);
+		for (String s : alphabet) {
 			Node redChild = red.getChild(s);
 			Node blueChild = blue.getChild(s);
 
@@ -59,7 +56,7 @@ public abstract class EDSMMerger {
 					red.addChild(s, blueChild);
 					blueChild.getParents().get(s).remove(blue);
 				}
-			} else if (redChild != blueChild) {
+			} else if (redChild != blueChild && blueChild != null) {
 				redChild = redChild.findRepresentative();
 				blueChild = blueChild.findRepresentative();
 				if (!merge(redChild, blueChild, finalMerge)) {
@@ -70,10 +67,7 @@ public abstract class EDSMMerger {
 		return true;
 	}
 
-	protected void undoMerge(Node red, Node blue) {
-		if (!isConsistent(red, blue)) {
-			return;
-		}
+	public void undoMerge(Node red, Node blue) {
 		for (int i = alphabet.size() - 1; i >= 0; i--) {
 			String s = alphabet.get(i);
 			Node redChild = red.getChild(s);
@@ -82,33 +76,40 @@ public abstract class EDSMMerger {
 			if (redChild == blueChild) {
 				if (blueChild != null) {
 					red.getChildren().remove(s);
+					blueChild.getParents().get(s).add(blue);
+					blueChild.getParents().get(s).remove(red);
 					blueChild.restore();
 				}
-			} else if (redChild != null) {
-				redChild = redChild.findRepresentative();
-				blueChild = blueChild.findRepresentative();
+			} else if (redChild != null && blueChild != null) {
+				//redChild = redChild.findRepresentative();
+				//blueChild = blueChild.findRepresentative();
+				redChild = blueChild.findRepresentative();
 				undoMerge(redChild, blueChild);
 			}
 		}
 
 		red.restore();
-		red.setAcceptingPathsSum(red.getAcceptingPathsSum() + blue.getAcceptingPathsSum());
-		red.setRejectingPathsSum(red.getRejectingPathsSum() + blue.getRejectingPathsSum());
 		for (Map.Entry<String, Integer> e : blue.getAcceptingPaths().entrySet()) {
-			red.addAcceptingPath(e.getKey(), e.getValue());
+			red.addAcceptingPath(e.getKey(), -e.getValue());
 		}
 		for (Map.Entry<String, Integer> e : blue.getRejectingPaths().entrySet()) {
-			red.addRejectingPath(e.getKey(), e.getValue());
+			red.addRejectingPath(e.getKey(), -e.getValue());
 		}
 
-		blue.setRepresentative(red);
+		blue.setRepresentative(blue);
 	}
 
-	int getScore() {
+	public int getScore() {
 		return score;
 	}
 
-	void resetScore() {
+	public void resetScore() {
 		score = 0;
+	}
+
+	private static	<T extends Comparable<? super T>> List<T> asSortedList(Collection<T> c) {
+		List<T> list = new ArrayList<>(c);
+		Collections.sort(list);
+		return list;
 	}
 }

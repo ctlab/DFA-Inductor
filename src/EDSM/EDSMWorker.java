@@ -1,5 +1,6 @@
 package EDSM;
 
+import algorithms.StateMerger;
 import structures.APTA;
 import structures.Node;
 
@@ -7,27 +8,25 @@ import java.util.*;
 
 public class EDSMWorker {
 
-	enum EDSMHeuristic{
+	public enum EDSMHeuristic{
 		Status, Fanout
 	}
 
 	private APTA apta;
-	private Set<Node> redNodes;
-	private Set<Node> blueNodes;
-	private EDSMMerger merger;
+	private StateMerger merger;
 
 	private final boolean randomMode;
 	private final int positiveSizeBound;
 
 	public EDSMWorker(APTA apta, EDSMHeuristic heuristic, boolean randomMode,
-	                  int positiveSizeBound) {
+	                  int positiveSizeBound, int pathsLowerBound, int pathsOnSymbolLowerBound) {
 		this.apta = apta;
 		switch (heuristic) {
 			case Status:
-				merger = new StatusEDSMMerger(asSortedList(apta.getAlphabet()));
+				merger = new StatusEDSMMerger(apta);
 				break;
 			case Fanout:
-				merger = new FanoutEDSMMerger(asSortedList(apta.getAlphabet()));
+				merger = new FanoutEDSMMerger(apta, pathsLowerBound, pathsOnSymbolLowerBound);
 				break;
 		}
 		redNodes = new HashSet<>();
@@ -39,9 +38,9 @@ public class EDSMWorker {
 	}
 
 	public boolean startMerging() {
-		//TODO: do while big enough
+		//TODO: out condition
 		while (true) {
-			if (apta.getRoot().getAcceptingPathsSum() < positiveSizeBound) {
+			if (apta.getSize() < 200) {
 				break;
 			}
 			MergePair mergePair = findBestMerge();
@@ -63,20 +62,20 @@ public class EDSMWorker {
 			pair = new MergePair();
 			for (Node red : redNodes) {
 				score = mergeAndUndo(red, blue);
-				if (randomMode) {
+				if (randomMode && score > 0) {
 					score *= Math.random();
 				}
-				if (score > pair.score) {
+				if (score > pair.score || pair.score == 0) {
 					pair.update(red, blue, score);
 				}
 			}
 			if (pair.score > 0) {
-				if (bestPair.score >= 0 && pair.score > bestPair.score) {
+				if (pair.score > bestPair.score) {
 					bestPair = pair;
 				}
 			}
 			if (pair.score < 0) {
-				if (bestPair.score >= 0 || bestPair.score < pair.score) {
+				if (bestPair.score < 0 && bestPair.score < pair.score || bestPair.score == 0) {
 					bestPair = pair;
 				}
 			}
@@ -95,7 +94,7 @@ public class EDSMWorker {
 	private int mergeAndUndo(Node red, Node blue) {
 		merger.resetScore();
 		merger.merge(red, blue, false);
-		int res = merger.getScore();
+		int res = merger.getScore() >= 0 ? merger.getScore() : -blue.getDepth();
 		merger.undoMerge(red, blue);
 		return res;
 	}
@@ -137,7 +136,7 @@ public class EDSMWorker {
 		MergePair(Node red, Node blue, boolean consistent) {
 			this.red = red;
 			this.blue = blue;
-			score = 0;
+			score = Integer.MIN_VALUE;
 		}
 
 		void update(Node red, Node blue, double score) {
@@ -145,11 +144,5 @@ public class EDSMWorker {
 			this.blue = blue;
 			this.score = score;
 		}
-	}
-
-	private static	<T extends Comparable<? super T>> List<T> asSortedList(Collection<T> c) {
-		List<T> list = new ArrayList<>(c);
-		Collections.sort(list);
-		return list;
 	}
 }

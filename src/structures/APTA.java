@@ -180,6 +180,18 @@ public class APTA {
 			int includeNumber = Math.min(red.getNumber(), blue.getNumber());
 			int excludeNumber = Math.max(red.getNumber(), blue.getNumber());
 
+			if (excludeNumber == blue.getNumber()) {
+				for (String label : blue.getChildren().keySet()) {
+					vlset.get(label).add(includeNumber);
+					vlset.get(label).remove(excludeNumber);
+				}
+			} else {
+				for (String label : red.getChildren().keySet()) {
+					vlset.get(label).add(includeNumber);
+					vlset.get(label).remove(excludeNumber);
+				}
+			}
+
 			red.setNumber(includeNumber);
 			indexesOfNodes.put(includeNumber, red);
 
@@ -193,8 +205,13 @@ public class APTA {
 			}
 
 			for (int i = excludeNumber; i < size; i++) {
-				indexesOfNodes.get(i + 1).setNumber(i);
-				indexesOfNodes.put(i, indexesOfNodes.get(i + 1));
+				Node changingNode = indexesOfNodes.get(i + 1);
+				for (String label : changingNode.getChildren().keySet()) {
+					vlset.get(label).add(i);
+					vlset.get(label).remove(i + 1);
+				}
+				changingNode.setNumber(i);
+				indexesOfNodes.put(i, changingNode);
 				if (acceptableNodes.contains(i + 1)) {
 					acceptableNodes.add(i);
 					acceptableNodes.remove(i + 1);
@@ -204,23 +221,14 @@ public class APTA {
 					rejectableNodes.remove(i + 1);
 				}
 			}
-
-			if (excludeNumber == blue.getNumber()) {
-				for (String label : blue.getChildren().keySet()) {
-					vlset.get(label).add(includeNumber);
-					vlset.get(label).remove(excludeNumber);
-				}
-			} else {
-				for (String label : red.getChildren().keySet()) {
-					vlset.get(label).add(includeNumber);
-					vlset.get(label).remove(excludeNumber);
-				}
-			}
+			indexesOfNodes.remove(size);
 
 			for (Map.Entry<String, Set<Node>> e : blue.getParents().entrySet()) {
 				String label = e.getKey();
 				for (Node parent : e.getValue()) {
-					red.addParent(label, parent);
+					if (indexesOfNodes.get(parent.getNumber()) == parent) {
+						red.addParent(label, parent);
+					}
 				}
 			}
 		}
@@ -245,6 +253,7 @@ public class APTA {
 		StringBuilder s = new StringBuilder();
 		s.append("digraph Automat {\n");
 		s.append("    node [shape = circle];\n");
+		s.append("    rankdir=LR;\n");
 		s.append("    0 [style = \"bold\"];\n");
 
 		for (int i = 0; i < size; i++) {

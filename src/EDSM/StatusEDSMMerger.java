@@ -1,15 +1,15 @@
 package EDSM;
 
+import algorithms.StateMerger;
 import structures.APTA;
 import structures.Node;
-import structures.Node.Status;
 
 import java.util.List;
 
-public class StatusEDSMMerger extends EDSMMerger {
+public class StatusEDSMMerger extends StateMerger {
 
-	public StatusEDSMMerger(List<String> alphabet) {
-		super(alphabet);
+	public StatusEDSMMerger(APTA apta) {
+		super(apta);
 	}
 
 	@Override

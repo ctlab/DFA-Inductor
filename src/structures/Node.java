@@ -37,23 +37,38 @@ public class Node {
 	private void init(int number, int depth) {
 		this.number = number;
 		this.depth = depth;
-		this.depthBackup = depth;
+		this.depthBackup = 0;
 		this.acceptingPathsSum = 0;
 		this.acceptingPaths = new HashMap<>();
+		this.rejectingPathsSum = 0;
+		this.rejectingPaths = new HashMap<>();
 		this.children = new HashMap<>();
 		this.parents = new HashMap<>();
 		this.status = Status.COMMON;
+		this.statusBackup = null;
 		this.representative = this;
 	}
 
 	public void backup() {
-		statusBackup = status;
-		depthBackup = depth;
+		if (statusBackup == null && depthBackup == 0) {
+			statusBackup = status;
+			depthBackup = depth;
+		}
+	}
+
+	void resetBackup() {
+		statusBackup = null;
+		depthBackup = 0;
 	}
 
 	public void restore() {
-		status = statusBackup;
-		depth = depthBackup;
+		if (statusBackup != null && depthBackup != 0) {
+			status = statusBackup;
+			depth = depthBackup;
+
+			statusBackup = null;
+			depthBackup = 0;
+		}
 	}
 
 	public int getDepth() {
@@ -101,7 +116,7 @@ public class Node {
 	}
 
 	public void addAcceptingPath(String label, int k) {
-		acceptingPathsSum++;
+		acceptingPathsSum += k;
 		if (!acceptingPaths.containsKey(label)) {
 			acceptingPaths.put(label, 0);
 		}
@@ -113,7 +128,7 @@ public class Node {
 	}
 
 	public void addRejectingPath(String label, int k) {
-		rejectingPathsSum++;
+		rejectingPathsSum += k;
 		if (!rejectingPaths.containsKey(label)) {
 			rejectingPaths.put(label, 0);
 		}
@@ -180,7 +195,9 @@ public class Node {
 
 	public Node findRepresentative() {
 		Node rep = this.representative;
-		while (rep != rep.findRepresentative());
+		while (rep != rep.representative) {
+			rep = rep.findRepresentative();
+		};
 		return rep;
 	}
 

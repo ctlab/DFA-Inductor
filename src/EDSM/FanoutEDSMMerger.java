@@ -1,19 +1,20 @@
 package EDSM;
 
+import algorithms.StateMerger;
 import structures.APTA;
 import structures.Node;
 
 import java.util.List;
 import java.util.Map;
 
-public class FanoutEDSMMerger extends EDSMMerger {
+public class FanoutEDSMMerger extends StateMerger {
 	protected int pathsLowerBound = 0;
 	protected int pathsOnSymbolLowerBound = 0;
 
-	public FanoutEDSMMerger(List<String> alphabet) {
-		super(alphabet);
-		pathsLowerBound = 25;
-		pathsOnSymbolLowerBound = 10;
+	public FanoutEDSMMerger(APTA apta, int pathsLowerBound, int pathsOnSymbolLowerBound) {
+		super(apta);
+		this.pathsLowerBound = pathsLowerBound;
+		this.pathsOnSymbolLowerBound = pathsOnSymbolLowerBound;
 	}
 
 	@Override
@@ -21,19 +22,21 @@ public class FanoutEDSMMerger extends EDSMMerger {
 		if (red.isAcceptable() && blue.isRejectable() || red.isRejectable() && blue.isAcceptable()) {
 			return false;
 		}
-		if (red.getAcceptingPathsSum() >= pathsLowerBound) {
-			for (Map.Entry<String, Integer> e : red.getAcceptingPaths().entrySet()) {
-				if (e.getValue() >= pathsOnSymbolLowerBound) {
-					if (blue.getAcceptingPaths().get(e.getKey()) == 0) {
-						return false;
-					}
-				}
-			}
+		if (!checkConsistencyConditions(red, blue)) {
+			return false;
 		}
-		if (blue.getAcceptingPathsSum() >= pathsLowerBound) {
-			for (Map.Entry<String, Integer> e : blue.getAcceptingPaths().entrySet()) {
+		if (!checkConsistencyConditions(blue, red)) {
+			return false;
+		}
+		return true;
+	}
+
+	private boolean checkConsistencyConditions(Node first, Node second) {
+		if (first.getAcceptingPathsSum() >= pathsLowerBound) {
+			for (Map.Entry<String, Integer> e : first.getAcceptingPaths().entrySet()) {
 				if (e.getValue() >= pathsOnSymbolLowerBound) {
-					if (red.getAcceptingPaths().get(e.getKey()) == 0) {
+					if (second.getAcceptingPaths().containsKey(e.getKey()) &&
+							second.getAcceptingPaths().get(e.getKey()) == 0) {
 						return false;
 					}
 				}
@@ -45,13 +48,5 @@ public class FanoutEDSMMerger extends EDSMMerger {
 	@Override
 	protected int scoreAdd(Node red, Node blue) {
 		return (red.getAcceptingPathsSum() > 0) && (blue.getAcceptingPathsSum() > 0) ? 1 : 0;
-	}
-
-	public void setPathsLowerBound(int pathsLowerBound) {
-		this.pathsLowerBound = pathsLowerBound;
-	}
-
-	public void setPathsOnSymbolLowerBound(int pathsOnSymbolLowerBound) {
-		this.pathsOnSymbolLowerBound = pathsOnSymbolLowerBound;
 	}
 }
