@@ -14,10 +14,11 @@ public class EDSMWorker {
 	private StateMerger merger;
 
 	private final boolean randomMode;
-	private final int positiveSizeBound;
+	private final int aptaBound;
+	private final int redBound;
 
 	public EDSMWorker(APTA apta, EDSMHeuristic heuristic, boolean randomMode,
-	                  int positiveSizeBound, int pathsLowerBound, int pathsOnSymbolLowerBound) {
+	                  int aptaBound, int redBound, int pathsLowerBound, int pathsOnSymbolLowerBound) {
 		this.apta = apta;
 		switch (heuristic) {
 			case Status:
@@ -29,13 +30,14 @@ public class EDSMWorker {
 		}
 
 		this.randomMode = randomMode;
-		this.positiveSizeBound = positiveSizeBound;
+		this.aptaBound = aptaBound;
+		this.redBound = redBound;
 	}
 
 	public boolean startMerging() {
 		//TODO: out condition
 		while (true) {
-			if (apta.getSize() < 200) {
+			if (apta.getSize() < aptaBound || apta.getRedNodes().size() > redBound) {
 				break;
 			}
 			MergePair mergePair = findBestMerge();

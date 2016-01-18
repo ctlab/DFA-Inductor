@@ -107,9 +107,13 @@ public class Main {
 			"1 - number of same status merges, 2 - overlap in fanout")
 	private int heuristic = 0;
 
-	@Option(name = "--aptabound", aliases = {"-ab"}, usage = "upper bound for states which are " +
-			"reachable with accepting strings")
-	private int positiveSizeBound = 2000;
+	@Option(name = "--aptabound", aliases = {"-ab"}, usage = "upper bound for states in the partially" +
+			"identifiend apta")
+	private int aptaBound = 1000;
+
+	@Option(name = "--redbound", aliases = {"-rb"}, usage = "lower bound for number of red states " +
+			"in the partially identified apta")
+	private int redBound = 50;
 
 	@Option(name = "--randomgreedy", aliases = {"-random"}, usage = "random greedy mode; if it is not" +
 			"set - non-random greedy")
@@ -180,7 +184,7 @@ public class Main {
 
 			if (EDSMMode) {
 				logger.info("EDSM greedy preprocessing started");
-				EDSMWorker worker = new EDSMWorker(apta, edsmHeuristic, randomGreedy, positiveSizeBound,
+				EDSMWorker worker = new EDSMWorker(apta, edsmHeuristic, randomGreedy, aptaBound, redBound,
 						pathsLowerBound, pathsOnSymbolLowerBound);
 				worker.startMerging();
 				//TODO: logging about results of EDSM
