@@ -4,8 +4,6 @@ import algorithms.StateMerger;
 import structures.APTA;
 import structures.Node;
 
-import java.util.*;
-
 public class EDSMWorker {
 
 	public enum EDSMHeuristic{
@@ -29,9 +27,6 @@ public class EDSMWorker {
 				merger = new FanoutEDSMMerger(apta, pathsLowerBound, pathsOnSymbolLowerBound);
 				break;
 		}
-		redNodes = new HashSet<>();
-		blueNodes = new HashSet<>();
-		initRedBlue();
 
 		this.randomMode = randomMode;
 		this.positiveSizeBound = positiveSizeBound;
@@ -45,7 +40,7 @@ public class EDSMWorker {
 			}
 			MergePair mergePair = findBestMerge();
 			if (mergePair.score < 0) {
-				updateRedBlue(mergePair.blue);
+				apta.promoteBlueToRed(mergePair.blue);
 			} else {
 				merge(mergePair);
 			}
@@ -58,9 +53,9 @@ public class EDSMWorker {
 		MergePair pair;
 		MergePair bestPair = new MergePair();
 		double score;
-		for (Node blue : blueNodes) {
+		for (Node blue : apta.getBlueNodes()) {
 			pair = new MergePair();
-			for (Node red : redNodes) {
+			for (Node red : apta.getRedNodes()) {
 				score = mergeAndUndo(red, blue);
 				if (randomMode && score > 0) {
 					score *= Math.random();
@@ -88,6 +83,7 @@ public class EDSMWorker {
 		Node blue = pair.blue;
 		merger.resetScore();
 		merger.merge(red, blue, true);
+		apta.updateRedBlue();
 		return merger.getScore();
 	}
 
@@ -97,25 +93,6 @@ public class EDSMWorker {
 		int res = merger.getScore() >= 0 ? merger.getScore() : -blue.getDepth();
 		merger.undoMerge(red, blue);
 		return res;
-	}
-
-	private void initRedBlue() {
-		redNodes.add(apta.getRoot());
-		for (Node redNode : redNodes) {
-			for (Node candidateBlueNode : redNode.getChildren().values()) {
-				if (!redNodes.contains(candidateBlueNode)) {
-					blueNodes.add(candidateBlueNode);
-				}
-			}
-		}
-	}
-
-	private void updateRedBlue(Node blue) {
-		blueNodes.remove(blue);
-		redNodes.add(blue);
-		for (Node newBlue : blue.getChildren().values()) {
-			blueNodes.add(newBlue);
-		}
 	}
 
 	class MergePair {

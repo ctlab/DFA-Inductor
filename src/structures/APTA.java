@@ -17,6 +17,9 @@ public class APTA {
 	private Set<Integer> rejectableNodes;
 	private Map<Integer, Node> indexesOfNodes;
 	private Map<String, Set<Integer>> vlset;
+	private Set<Node> redNodes;
+	private Set<Node> notRedNodes;
+	private Set<Node> blueNodes;
 
 	private StringTokenizer st = null;
 
@@ -27,8 +30,13 @@ public class APTA {
 		vlset = new HashMap<>();
 		alphabet = new HashSet<>();
 		size = 0;
+		redNodes = new HashSet<>();
+		notRedNodes = new HashSet<>();
+		blueNodes = new HashSet<>();
+
 		root = new Node(size, 1);
 		indexesOfNodes.put(size++, root);
+		initRedBlue();
 	}
 
 
@@ -37,17 +45,20 @@ public class APTA {
 		this.words = other.words;
 		this.alphaSize = other.alphaSize;
 
-		this.alphabet = new HashSet<>(other.getAlphabet());
-		this.acceptableNodes = new HashSet<>(other.getRejectableNodes());
-		this.rejectableNodes = new HashSet<>(other.getRejectableNodes());
-		this.vlset = new HashMap<>(other.vlset);
+		alphabet = new HashSet<>(other.getAlphabet());
+		acceptableNodes = new HashSet<>(other.getRejectableNodes());
+		rejectableNodes = new HashSet<>(other.getRejectableNodes());
+		vlset = new HashMap<>(other.vlset);
+		redNodes = new HashSet<>();
+		notRedNodes = new HashSet<>();
+		blueNodes = new HashSet<>();
 
-		this.root = new Node(0);
+		root = new Node(0);
 		Node curNode = root;
-		copyNodes(curNode, root);
+		copyNodes(curNode, other.getRoot(), other);
 	}
 
-	private void copyNodes(Node current, Node parallel) {
+	private void copyNodes(Node current, Node parallel, APTA other) {
 		String label;
 		Node child;
 		Node newChild;
@@ -64,7 +75,16 @@ public class APTA {
 			newChild.setRejectingPaths(child.getRejectingPaths());
 			newChild.setStatus(child.getStatus());
 
-			copyNodes(newChild, child);
+			if (other.getRedNodes().contains(child)) {
+				this.redNodes.add(newChild);
+			} else {
+				this.notRedNodes.add(newChild);
+			}
+			if (other.getBlueNodes().contains(child)) {
+				this.blueNodes.add(newChild);
+			}
+
+			copyNodes(newChild, child, other);
 		}
 	}
 
@@ -76,6 +96,9 @@ public class APTA {
 			indexesOfNodes = new HashMap<>();
 			vlset = new HashMap<>();
 			alphabet = new HashSet<>();
+			redNodes = new HashSet<>();
+			notRedNodes = new HashSet<>();
+			blueNodes = new HashSet<>();
 
 			int lines = nextInt(br);
 			words = lines;
@@ -96,7 +119,7 @@ public class APTA {
 				for (int i = 0; i < len; i++) {
 					depth++;
 					label = nextToken(br);
-					if (i < len - 1) {
+					if (i < len) {
 						if (status == 1) {
 							currentNode.addAcceptingPath(label);
 						} else {
@@ -127,6 +150,7 @@ public class APTA {
 			}
 			assert alphabet.size() == alphaSize;
 		}
+		initRedBlue();
 	}
 
 	public boolean isAcceptable(int number) {
@@ -135,6 +159,58 @@ public class APTA {
 
 	public boolean isRejectable(int number) {
 		return rejectableNodes.contains(number);
+	}
+
+	public Set<Node> getRedNodes() {
+		return redNodes;
+	}
+
+	public Set<Node> getNotRedNodes() {
+		return notRedNodes;
+	}
+
+	public Set<Node> getBlueNodes() {
+		return blueNodes;
+	}
+
+	private void initRedBlue() {
+		redNodes.add(getRoot());
+		for (Node redNode : redNodes) {
+			for (Node candidateBlueNode : redNode.getChildren().values()) {
+				if (!redNodes.contains(candidateBlueNode)) {
+					blueNodes.add(candidateBlueNode);
+					notRedNodes.add(candidateBlueNode);
+					initNotRed(candidateBlueNode);
+				}
+			}
+		}
+	}
+
+	private void initNotRed(Node current) {
+		for (Node notRed : current.getChildren().values()) {
+			notRedNodes.add(notRed);
+			initNotRed(notRed);
+		}
+	}
+
+	public void updateRedBlue() {
+		blueNodes.clear();
+		for (Node redNode : redNodes) {
+			for (Node candidateBlueNode : redNode.getChildren().values()) {
+				if (!redNodes.contains(candidateBlueNode)) {
+					blueNodes.add(candidateBlueNode);
+				}
+			}
+		}
+	}
+
+	public void promoteBlueToRed(Node blue) {
+		blueNodes.remove(blue);
+		notRedNodes.remove(blue);
+		redNodes.add(blue);
+		for (Node newBlue : blue.getChildren().values()) {
+			blueNodes.add(newBlue);
+		}
 	}
 
 	public int getSize() {
@@ -175,6 +251,9 @@ public class APTA {
 	}
 
 	public void update(Node red, Node blue) {
+		notRedNodes.remove(blue);
+		red.resetBackup();
+		blue.resetBackup();
 		if (red != blue) {
 			size--;
 			int includeNumber = Math.min(red.getNumber(), blue.getNumber());
