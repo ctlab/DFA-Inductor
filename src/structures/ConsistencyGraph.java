@@ -52,10 +52,9 @@ public class ConsistencyGraph {
 					}
 				}
 			}
-
 			for (Node notRed1 : apta.getNotRedNodes()) {
 				for (Node notRed2 : apta.getNotRedNodes()) {
-					if (notRed1.getNumber() <= notRed2.getNumber()) {
+					if (notRed1.getNumber() >= notRed2.getNumber()) {
 						continue;
 					}
 					if (notRed1.isAcceptable() && notRed2.isRejectable() || notRed1.isRejectable() && notRed2.isAcceptable()) {
