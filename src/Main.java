@@ -187,10 +187,15 @@ public class Main {
 				EDSMWorker worker = new EDSMWorker(apta, edsmHeuristic, randomGreedy, aptaBound, redBound,
 						pathsLowerBound, pathsOnSymbolLowerBound);
 				worker.startMerging();
-				//TODO: logging about results of EDSM
+				logger.info("EDSM greedy preprocessing finished");
+				logger.info("New APTA size: " + apta.getSize());
+				logger.info("Number of red states: " + apta.getRedNodes().size());
 			}
 
 			if (!backtrackingMode) {
+				if (!noisyMode) {
+					logger.info("CG building started");
+				}
 				ConsistencyGraph cg = new ConsistencyGraph(apta, noisyMode);
 				if (!noisyMode) {
 					logger.info("CG was successfully built");
