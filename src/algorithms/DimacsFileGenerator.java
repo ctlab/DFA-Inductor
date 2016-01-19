@@ -56,6 +56,7 @@ public class DimacsFileGenerator {
 	private int noisySize;
 	private Set<Integer> acceptableClique;
 	private Set<Integer> rejectableClique;
+	private Set<Integer> commonClique;
 	private int color = 0;
 	private List<Integer> ends;
 	private boolean fixMode;
@@ -145,6 +146,7 @@ public class DimacsFileGenerator {
 		if (SB == SBStrategy.CLIQUE_SB) {
 			acceptableClique = cg.getAcceptableClique();
 			rejectableClique = cg.getRejectableClique();
+			commonClique = cg.getCommonClique();
 		}
 
 		if (noisyP > 0) {
@@ -225,6 +227,7 @@ public class DimacsFileGenerator {
 				if (SB == SBStrategy.CLIQUE_SB) {
 					printAcceptableCliqueSB(buffer);
 					printRejectableCliqueSB(buffer);
+					printCommonCliqueSB(buffer);
 				}
 
 				if (noisyP > 0) {
@@ -666,6 +669,17 @@ public class DimacsFileGenerator {
 			if (color < colors) {
 				buffer.addClause(x[i][color]);
 				buffer.addClause(-z[color]);
+				color++;
+			} else {
+				break;
+			}
+		}
+	}
+
+	private void printCommonCliqueSB(Buffer buffer) {
+		for (int i : commonClique) {
+			if (color < colors) {
+				buffer.addClause(x[i][color]);
 				color++;
 			} else {
 				break;

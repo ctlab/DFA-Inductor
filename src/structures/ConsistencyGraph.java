@@ -10,6 +10,7 @@ public class ConsistencyGraph {
 	private APTA apta;
 	private Set<Integer> acceptableClique;
 	private Set<Integer> rejectableClique;
+	private Set<Integer> commonClique;
 
 	public ConsistencyGraph(APTA apta, boolean noisyMode) {
 		edges = new HashMap<>();
@@ -141,6 +142,24 @@ public class ConsistencyGraph {
 				}
 			}
 		}
+		commonClique = new HashSet<>();
+		if (apta.getRedNodes().size() > acceptableClique.size() + rejectableClique.size()) {
+			acceptableClique.clear();
+			rejectableClique.clear();
+			for (Node node : apta.getRedNodes()) {
+				switch (node.getStatus()) {
+					case ACCEPTABLE:
+						acceptableClique.add(node.getNumber());
+						break;
+					case COMMON:
+						commonClique.add(node.getNumber());
+						break;
+					case REJECTABLE:
+						rejectableClique.add(node.getNumber());
+						break;
+				}
+			}
+		}
 	}
 
 	private int findNeighbourWithHighestDegree(Set<Integer> cur, int v, boolean acceptable) {
@@ -183,7 +202,11 @@ public class ConsistencyGraph {
 		return rejectableClique;
 	}
 
+	public Set<Integer> getCommonClique() {
+		return commonClique;
+	}
+
 	public int getCliqueSize() {
-		return acceptableClique.size() + rejectableClique.size();
+		return acceptableClique.size() + rejectableClique.size() + commonClique.size();
 	}
 }
