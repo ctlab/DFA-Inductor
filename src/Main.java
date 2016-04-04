@@ -4,10 +4,7 @@ import algorithms.AutomatonBuilder;
 import algorithms.BacktrackingSolver;
 import algorithms.DimacsFileGenerator;
 import algorithms.SATSolver;
-import structures.APTA;
-import structures.Automaton;
-import structures.ConsistencyGraph;
-
+import misc.Settings;
 import org.kohsuke.args4j.Argument;
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
@@ -16,6 +13,9 @@ import org.kohsuke.args4j.spi.BooleanOptionHandler;
 import org.sat4j.reader.ParseFormatException;
 import org.sat4j.specs.ContradictionException;
 import org.sat4j.specs.TimeoutException;
+import structures.APTA;
+import structures.Automaton;
+import structures.ConsistencyGraph;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -137,21 +137,49 @@ public class Main {
 			parser.printUsage(System.err);
 			return;
 		}
-
-		boolean EDSMMode = heuristic > 0;
-		EDSMHeuristic edsmHeuristic = null;
+		Settings.setSettings(
+				findAllMode,
+				iterativeMode,
+				iterativeSolver,
+				loopMode,
+				backtrackingMode,
+				randomGreedyMode,
+				extendFirst,
+				resultFilePath,
+				externalSATSolver,
+				dimacsFile,
+				logFile,
+				file,
+				maxSize,
+				minSize,
+				SBStrategy,
+				timeout,
+				p,
+				findCount,
+				amo,
+				pathsLowerBound,
+				pathsOnSymbolLowerBound,
+				runs,
+				heuristic,
+				aptaBound,
+				redBound,
+				sinksMode);
+		Settings.EDSM_MODE = heuristic > 0;
+		boolean EDSMMode = Settings.EDSM_MODE;
 		switch (heuristic) {
 			case 1:
-				edsmHeuristic = EDSMHeuristic.Status;
+				Settings.EDSM_HEURISTIC = EDSMHeuristic.Status;
 				break;
 			case 2:
-				edsmHeuristic = EDSMHeuristic.Fanout;
+				Settings.EDSM_HEURISTIC = EDSMHeuristic.Fanout;
 				break;
 		}
 
-		boolean noisyMode = p > 0;
-		findAllMode |= findCount > 0;
-		loopMode |= findAllMode;
+		Settings.NOISY_MODE = p > 0;
+		boolean noisyMode = Settings.NOISY_MODE;
+		Settings.FIND_ALL_MODE |= Settings.FIND_K > 0;
+		boolean findAllMode = Settings.FIND_ALL_MODE;
+		Settings.LOOP_MODE |= Settings.FIND_ALL_MODE;
 		if (SBStrategy == 3 && noisyMode) {
 			System.err.println("You can't use CLIQUE symmetry breaking strategy during solving " +
 					"noisy DFA building problem");
@@ -184,8 +212,7 @@ public class Main {
 
 			if (EDSMMode) {
 				logger.info("EDSM greedy preprocessing started");
-				EDSMWorker worker = new EDSMWorker(apta, edsmHeuristic, randomGreedy, aptaBound, redBound,
-						pathsLowerBound, pathsOnSymbolLowerBound);
+				EDSMWorker worker = new EDSMWorker(apta);
 				worker.startMerging();
 				logger.info("EDSM greedy preprocessing finished");
 				logger.info("New APTA size: " + apta.getSize());
@@ -196,14 +223,15 @@ public class Main {
 				if (!noisyMode) {
 					logger.info("CG building started");
 				}
-				ConsistencyGraph cg = new ConsistencyGraph(apta, noisyMode);
+				ConsistencyGraph cg = new ConsistencyGraph(apta);
 				if (!noisyMode) {
 					logger.info("CG was successfully built");
 				}
 				if (!noisyMode) {
 					cg.findClique();
 					int cliqueSize = cg.getCliqueSize();
-					minSize = Math.max(cliqueSize, minSize);
+					Settings.MINIMUM_SIZE = Math.max(cliqueSize, Settings.MINIMUM_SIZE);
+					minSize = Settings.MINIMUM_SIZE;
 					logger.info("Clique was found. Its size is " + cliqueSize + ".");
 					logger.info("Searching will be started from size " + minSize + ".");
 				}
@@ -218,18 +246,14 @@ public class Main {
 							}
 							break;
 						}
-						DimacsFileGenerator dfg = new DimacsFileGenerator(apta, cg, colors, SBStrategy, p, dimacsFile, loopMode);
-						dfg.generateFile(amo);
+						DimacsFileGenerator dfg = new DimacsFileGenerator(apta, cg, colors);
+						dfg.generateFile();
 						logger.info("SAT problem in dimacs format successfully generated");
 						SATSolver solver = null;
 						do {
 							if (!(findAllMode && iterativeMode && curDFA > 1)) {
-								solver = new SATSolver(apta, colors, dimacsFile,
-										(int) (timeout - ((System.currentTimeMillis() - fullStartTime)) / 1000.),
-										externalSATSolver, iterativeMode, iterativeSolver);
-							}
-							if (solver == null) {
-								throw new NullPointerException("Something gone wrong with solver initialization.");
+								solver = new SATSolver(apta, colors,
+										(int) (timeout - ((System.currentTimeMillis() - fullStartTime)) / 1000.));
 							}
 							logger.info("SAT solver successfully initialized");
 
@@ -252,7 +276,7 @@ public class Main {
 									logger.warning("Some problem with SATSolver. Shouldn't be here. " +
 											"Exception: " + e.getMessage());
 								}
-								Automaton automaton = AutomatonBuilder.build(model, dfg, apta, colors, noisyMode);
+								Automaton automaton = AutomatonBuilder.build(model, dfg, apta, colors);
 								String fullResultFilePath = resultFilePath;
 								if (findAllMode) {
 									fullResultFilePath += fineNumber(curDFA);
@@ -298,11 +322,12 @@ public class Main {
 					}
 				}
 			} else {
-				ConsistencyGraph cg = new ConsistencyGraph(apta, noisyMode);
+				ConsistencyGraph cg = new ConsistencyGraph(apta);
 				logger.info("CG was successfully built");
 				cg.findClique();
 				int cliqueSize = cg.getCliqueSize();
-				minSize = Math.max(cliqueSize, minSize);
+				Settings.MINIMUM_SIZE = Math.max(cliqueSize, Settings.MINIMUM_SIZE);
+				minSize = Settings.MINIMUM_SIZE;
 				logger.info("Clique was found. Its size is " + cliqueSize + ".");
 				logger.info("Searching will be started from size " + minSize + ".");
 				boolean found = false;
@@ -317,7 +342,7 @@ public class Main {
 							break;
 						}
 						BacktrackingSolver solver = new BacktrackingSolver(apta, colors,
-								(int) (timeout - ((System.currentTimeMillis() - fullStartTime)) / 1000.), findAllMode);
+								(int) (timeout - ((System.currentTimeMillis() - fullStartTime)) / 1000.));
 						logger.info("Backtracking solver successfully initialized");
 						startTime = System.currentTimeMillis();
 						if (solver.problemIsBacktrackinging()) {

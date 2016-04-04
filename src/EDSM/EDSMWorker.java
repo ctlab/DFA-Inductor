@@ -4,6 +4,7 @@ import algorithms.StateMerger;
 import structures.APTA;
 import structures.Node;
 
+import misc.Settings;
 public class EDSMWorker {
 
 	public enum EDSMHeuristic{
@@ -13,31 +14,21 @@ public class EDSMWorker {
 	private APTA apta;
 	private StateMerger merger;
 
-	private final boolean randomMode;
-	private final int aptaBound;
-	private final int redBound;
-
-	public EDSMWorker(APTA apta, EDSMHeuristic heuristic, boolean randomMode,
-	                  int aptaBound, int redBound, int pathsLowerBound, int pathsOnSymbolLowerBound) {
+	public EDSMWorker(APTA apta) {
 		this.apta = apta;
-		switch (heuristic) {
+		switch (Settings.EDSM_HEURISTIC) {
 			case Status:
 				merger = new StatusEDSMMerger(apta);
 				break;
 			case Fanout:
-				merger = new FanoutEDSMMerger(apta, pathsLowerBound, pathsOnSymbolLowerBound);
+				merger = new FanoutEDSMMerger(apta);
 				break;
 		}
-
-		this.randomMode = randomMode;
-		this.aptaBound = aptaBound;
-		this.redBound = redBound;
 	}
 
 	public boolean startMerging() {
-		//TODO: out condition
 		while (true) {
-			if (apta.getSize() < aptaBound || apta.getRedNodes().size() > redBound) {
+			if (apta.getSize() < Settings.APTA_BOUND || apta.getRedNodes().size() > Settings.RED_BOUND) {
 				break;
 			}
 			MergePair mergePair = findBestMerge();
@@ -56,10 +47,13 @@ public class EDSMWorker {
 		MergePair bestPair = new MergePair();
 		double score;
 		for (Node blue : apta.getBlueNodes()) {
+			if (blue.getSinkType() != Node.SINK_TYPE.NON_SINK) {
+				continue;
+			}
 			pair = new MergePair();
 			for (Node red : apta.getRedNodes()) {
 				score = mergeAndUndo(red, blue);
-				if (randomMode && score > 0) {
+				if (Settings.RANDOM_GREEDY_MODE && score > 0) {
 					score *= Math.random();
 				}
 				if (score > pair.score || pair.score == 0) {

@@ -1,6 +1,7 @@
 package algorithms;
 
 import misc.Buffer;
+import misc.Settings;
 import structures.APTA;
 import structures.Automaton;
 import structures.ConsistencyGraph;
@@ -61,30 +62,21 @@ public class DimacsFileGenerator {
 	private List<Integer> ends;
 	private boolean fixMode;
 
-	public DimacsFileGenerator(APTA apta, ConsistencyGraph cg, int colors,
-	                           int SB, int noisyP, String dimacsFile) throws IOException {
-		init(apta, cg, colors, getSBStrategyByNum(SB), noisyP, dimacsFile, false);
-	}
+	private Set<Node> redNodes;
+	private Set<Node> notRedNotSinkNodes;
+	private Set<Node> sinkNodes;
 
-	public DimacsFileGenerator(APTA apta, ConsistencyGraph cg, int colors,
-	                           int SB, int noisyP, String dimacsFile, boolean fixMode) throws IOException {
-		init(apta, cg, colors, getSBStrategyByNum(SB), noisyP, dimacsFile, fixMode);
-	}
-
-	@SuppressWarnings("unchecked")
-	private void init(APTA apta, ConsistencyGraph cg, int colors,
-	                  SBStrategy SB, int noisyP, String dimacsFile, boolean fixMode) throws IOException {
+	public DimacsFileGenerator(APTA apta, ConsistencyGraph cg, int colors) throws IOException {
 		this.apta = apta;
 		this.cg = cg;
 		this.colors = colors;
-		this.SB = SB;
-		this.noisyP = noisyP;
+		this.SB = getSBStrategyByNum(Settings.SB_STRATEGY);
+		this.noisyP = Settings.ERRORS_PERCENT;
 		this.maxVar = 1;
-		this.vertices = apta.getSize();
-		this.dimacsFile = dimacsFile;
-		this.alphabet = apta.getAlphabet();
+		this.dimacsFile = Settings.DIMACS_FILE;
+		this.alphabet = asSortedList(apta.getAlphabet());
 		this.ends = new ArrayList<>();
-		this.fixMode = fixMode;
+		this.fixMode = Settings.LOOP_MODE;
 
 		this.x = new int[vertices][colors];
 		this.y = new HashMap[colors][colors];
@@ -94,6 +86,7 @@ public class DimacsFileGenerator {
 				x[v][i] = newVariable();
 			}
 		}
+
 		for (int i = 0; i < colors; i++) {
 			z[i] = newVariable();
 		}
@@ -180,16 +173,16 @@ public class DimacsFileGenerator {
 		}
 	}
 
-	public String generateFile(int amo) throws IOException {
+	public String generateFile() throws IOException {
 		File tmp = new File(tmpFile);
 		try (PrintWriter tmpPW = new PrintWriter(tmp)) {
 			Buffer buffer = new Buffer(tmpPW);
 			try (PrintWriter pwDF = new PrintWriter(dimacsFile)) {
 
 				printOneAtLeast(buffer);
-				printAtMostOneX(buffer, amo);
+				printAtMostOneX(buffer, Settings.AT_MOST_ONE_OPTION);
 				printParentRelationIsSet(buffer);
-				printParentRelationAtMostOneColor(buffer, amo);
+				printParentRelationAtMostOneColor(buffer, Settings.AT_MOST_ONE_OPTION);
 				printParentRelationAtLeastOneColor(buffer);
 				printParentRelationForces(buffer);
 

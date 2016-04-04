@@ -1,5 +1,7 @@
 package structures;
 
+import misc.Settings;
+
 import java.util.*;
 
 public class Node {

@@ -4,17 +4,14 @@ import algorithms.StateMerger;
 import structures.APTA;
 import structures.Node;
 
-import java.util.List;
+import misc.Settings;
+
 import java.util.Map;
 
 public class FanoutEDSMMerger extends StateMerger {
-	protected int pathsLowerBound = 0;
-	protected int pathsOnSymbolLowerBound = 0;
 
-	public FanoutEDSMMerger(APTA apta, int pathsLowerBound, int pathsOnSymbolLowerBound) {
+	public FanoutEDSMMerger(APTA apta) {
 		super(apta);
-		this.pathsLowerBound = pathsLowerBound;
-		this.pathsOnSymbolLowerBound = pathsOnSymbolLowerBound;
 	}
 
 	@Override
@@ -32,9 +29,9 @@ public class FanoutEDSMMerger extends StateMerger {
 	}
 
 	private boolean checkConsistencyConditions(Node first, Node second) {
-		if (first.getAcceptingPathsSum() >= pathsLowerBound) {
+		if (first.getAcceptingPathsSum() >= Settings.PATHS_LOWER_BOUND) {
 			for (Map.Entry<String, Integer> e : first.getAcceptingPaths().entrySet()) {
-				if (e.getValue() >= pathsOnSymbolLowerBound) {
+				if (e.getValue() >= Settings.PATHS_ON_SYMBOL_LOWER_BOUND) {
 					if (second.getAcceptingPaths().containsKey(e.getKey()) &&
 							second.getAcceptingPaths().get(e.getKey()) == 0) {
 						return false;

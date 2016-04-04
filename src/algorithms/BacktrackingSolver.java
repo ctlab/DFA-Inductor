@@ -1,5 +1,6 @@
 package algorithms;
 
+import misc.Settings;
 import structures.APTA;
 import structures.Automaton;
 import structures.Node;
@@ -17,12 +18,12 @@ public class BacktrackingSolver {
 	private boolean findAllMode;
 	private Set<Automaton> answer;
 
-	public BacktrackingSolver(APTA apta, int size, long timeout, boolean findAllMode) {
+	public BacktrackingSolver(APTA apta, int size, long timeout) {
 		this.apta = apta;
 		this.size = size;
 		this.startTime = System.currentTimeMillis();
 		this.timeout = timeout;
-		this.findAllMode = findAllMode;
+		this.findAllMode = Settings.FIND_ALL_MODE;
 	}
 
 	public boolean problemIsBacktrackinging() throws TimeoutException {

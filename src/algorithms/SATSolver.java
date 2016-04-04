@@ -1,5 +1,6 @@
 package algorithms;
 
+import misc.Settings;
 import structures.APTA;
 
 import org.sat4j.minisat.SolverFactory;
@@ -35,54 +36,23 @@ public class SATSolver {
 	Scanner sc;
 	BufferedWriter bw;
 
-	public SATSolver(APTA apta, int colors,
-	                 String dimacsFile) throws ContradictionException,
-			ParseFormatException, IOException {
-		init(apta, colors, dimacsFile, null, false, false);
-	}
-
-	public SATSolver(APTA apta, int colors,
-	                 String dimacsFile, int timeout) throws ContradictionException,
-			ParseFormatException, IOException {
-		this.timeout = timeout;
-		init(apta, colors, dimacsFile, null, false, false);
-	}
-
-	public SATSolver(APTA apta, int colors,
-	                 String dimacsFile, String satSolverFile)
-			throws ContradictionException, ParseFormatException, IOException {
-		init(apta, colors, dimacsFile, satSolverFile, false, false);
-	}
-
-	public SATSolver(APTA apta, int colors,
-	                 String dimacsFile, String satSolverFile, boolean iterativeMode, boolean iterativeSolver)
-			throws ContradictionException, ParseFormatException, IOException {
-		init(apta, colors, dimacsFile, satSolverFile, iterativeMode, iterativeSolver);
-	}
-
-	public SATSolver(APTA apta, int colors,
-	                 String dimacsFile, int timeout, String satSolverFile)
-			throws ContradictionException, IOException {
-		init(apta, colors, dimacsFile, satSolverFile, false, false);
-		timeoutString = " -t " + timeout + " ";
-	}
-
-	public SATSolver(APTA apta, int colors,
-	                 String dimacsFile, int timeout, String satSolverFile, boolean iterativeMode, boolean iterativeSolver)
-			throws ContradictionException, IOException {
-		init(apta, colors, dimacsFile, satSolverFile, iterativeMode, iterativeSolver);
-		timeoutString = " -t " + timeout + " ";
-	}
-
-	private void init(APTA apta, int colors, String dimacsFile,
-	                  String satSolverFile, boolean iterativeMode, boolean iterativeSolver) throws IOException {
+	public SATSolver(APTA apta, int colors, int timeout) throws IOException {
 		this.apta = apta;
 		this.vertices = apta.getSize();
-		this.dimacsFile = dimacsFile;
+		this.dimacsFile = Settings.DIMACS_FILE;
 		this.colors = colors;
-		this.satSolverFile = satSolverFile;
-		this.iterativeMode = iterativeMode;
-		this.iterativeSolver = iterativeSolver;
+		if (Settings.EXTERNAL_SAT_SOLVER != null) {
+			this.satSolverFile = Settings.EXTERNAL_SAT_SOLVER;
+			if (timeout > 0) {
+				timeoutString = " -t " + timeout + " ";
+			}
+		} else {
+			if (timeout > 0) {
+				this.timeout = timeout;
+			}
+		}
+		this.iterativeMode = Settings.ITERATIVE_MODE;
+		this.iterativeSolver = Settings.ITERATIVE_SOLVER;
 		this.first = true;
 		try (BufferedReader br = new BufferedReader(new FileReader(dimacsFile))) {
 			String line;

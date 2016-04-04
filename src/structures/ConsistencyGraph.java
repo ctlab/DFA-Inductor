@@ -2,6 +2,7 @@ package structures;
 
 import algorithms.CGStateMerger;
 import algorithms.StateMerger;
+import misc.Settings;
 
 import java.util.*;
 
@@ -12,11 +13,12 @@ public class ConsistencyGraph {
 	private Set<Integer> rejectableClique;
 	private Set<Integer> commonClique;
 
-	public ConsistencyGraph(APTA apta, boolean noisyMode) {
-		edges = new HashMap<>();
+	public ConsistencyGraph(APTA apta) {
+		RBedges = new HashMap<>();
+		BBedges = new HashMap<>();
 		this.apta = apta;
 
-		if (!noisyMode) {
+		if (!Settings.NOISY_MODE) {
 			for (int i = 0; i < apta.getSize(); i++) {
 				edges.put(i, new HashSet<Integer>());
 			}

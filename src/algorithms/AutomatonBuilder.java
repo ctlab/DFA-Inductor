@@ -1,5 +1,6 @@
 package algorithms;
 
+import misc.Settings;
 import structures.APTA;
 import structures.Automaton;
 import structures.Node;
@@ -9,11 +10,11 @@ import java.util.Map;
 
 public class AutomatonBuilder {
 
-	public static Automaton build(int[] model, DimacsFileGenerator dfg, APTA apta, int colors, boolean noisyMode) {
+	public static Automaton build(int[] model, DimacsFileGenerator dfg, APTA apta, int colors) {
 		int vertices = apta.getSize();
 		int[][] x = dfg.getX();
 		Map<Integer, Integer> f = null;
-		if (noisyMode) {
+		if (Settings.NOISY_MODE) {
 			f = dfg.getF();
 		}
 		Automaton automaton = new Automaton(colors);
