@@ -6,6 +6,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.*;
 
+import structures.Node.SINK_TYPE;
+
 public class APTA {
 
 	private Node root;
@@ -69,6 +71,8 @@ public class APTA {
 			newChild = new Node(child.getNumber(), child.getDepth());
 			current.addChild(label, newChild);
 
+			newChild.setAcceptingEndings(child.getAcceptingEndings());
+			newChild.setRejectingEndings(child.getRejectingEndings());
 			newChild.setAcceptingPathsSum(child.getAcceptingPathsSum());
 			newChild.setAcceptingPaths(child.getAcceptingPaths());
 			newChild.setRejectingPathsSum(child.getRejectingPathsSum());
@@ -142,9 +146,11 @@ public class APTA {
 				}
 				if (status == 1) {
 					acceptableNodes.add(currentNode.getNumber());
+					currentNode.setAcceptingEndings(1);
 					currentNode.setStatus(Node.Status.ACCEPTABLE);
 				} else {
 					rejectableNodes.add(currentNode.getNumber());
+					currentNode.setRejectingEndings(1);
 					currentNode.setStatus(Node.Status.REJECTABLE);
 				}
 			}
@@ -171,6 +177,33 @@ public class APTA {
 
 	public Set<Node> getBlueNodes() {
 		return blueNodes;
+	}
+
+	public Set<Node> getNotRedNotSinkNodes() {
+		Set<Node> notRedNotSinkStates = new HashSet<>();
+		for (Node node : blueNodes) {
+			if (node.getSinkType() == SINK_TYPE.NON_SINK) {
+				addSubtree(notRedNotSinkStates, node);
+			}
+		}
+		return notRedNotSinkStates;
+	}
+
+	private void addSubtree(Set<Node> states, Node node) {
+		states.add(node);
+		for (Node child : node.getChildren().values()) {
+			addSubtree(states, child);
+		}
+	}
+
+	public Set<Node> getSinkStates() {
+		Set<Node> sinkStates = new HashSet<>();
+		for (Node node : blueNodes) {
+			if (node.getSinkType() != SINK_TYPE.NON_SINK) {
+				addSubtree(sinkStates, node);
+			}
+		}
+		return sinkStates;
 	}
 
 	private void initRedBlue() {
@@ -214,6 +247,10 @@ public class APTA {
 	}
 
 	public int getSize() {
+		return redNodes.size() + getNotRedNotSinkNodes().size();
+	}
+
+	public int getRealSize() {
 		return size;
 	}
 
@@ -312,6 +349,8 @@ public class APTA {
 			}
 		}
 	}
+
+
 
 	private String nextToken(BufferedReader br) throws IOException {
 		while (st == null || !st.hasMoreTokens()) {

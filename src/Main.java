@@ -45,7 +45,7 @@ public class Main {
 	private int SBStrategy = 1;
 
 	@Option(name = "--timeout", aliases = {"-t"}, usage = "timeout", metaVar = "<timeout>")
-	private int timeout = 600;
+	private int timeout = 0;
 
 	@Option(name = "--solver", aliases = {"-sat"}, usage = "external SAT solver. using sat4j by default",
 			metaVar = "<SAT solver>")
@@ -97,7 +97,7 @@ public class Main {
 	private int pathsLowerBound = 25;
 
 	@Option(name = "--symbolpathslowerbound", aliases = {"-splb"}, usage = "lower bound for accepting" +
-			"intersections of dictionary words with a node by")
+			"intersections of dictionary words with a node by a symbol")
 	private int pathsOnSymbolLowerBound = 10;
 
 	@Option(name = "--runs", usage = "number of EDSM runs", metaVar = "<runs>")
@@ -116,8 +116,19 @@ public class Main {
 	private int redBound = 50;
 
 	@Option(name = "--randomgreedy", aliases = {"-random"}, usage = "random greedy mode; if it is not" +
-			"set - non-random greedy")
-	private boolean randomGreedy = false;
+			"set - non-random greedy", handler = BooleanOptionHandler.class)
+	private boolean randomGreedyMode = false;
+
+	@Option(name = "--sinkmode", aliases = {"-sink"}, usage = "sink mode: 0 - do not use sinks; 1 - " +
+			"use reject sink only; 2 - use accept and reject sinks; 3 - use low statistical information sink only;" +
+			"4 - use rejecet and low statistical information sink; " +
+			"5 - use accept, reject and low statistical information sinks")
+	private int sinksMode = 0;
+
+	@Option(name = "--extendfirst", aliases = {"-ef"}, usage = "if set extend red states first if there is exist" +
+			"a blue state which cannot be merged with any red, otherwise extend only if no more possible merges" +
+			"exist", handler = BooleanOptionHandler.class)
+	private boolean extendFirst = true;
 
 	@Argument(usage = "dictionary file", metaVar = "<file>", required = true)
 	private String file;

@@ -38,6 +38,8 @@ public abstract class StateMerger {
 		for (Map.Entry<String, Integer> e : blue.getRejectingPaths().entrySet()) {
 			red.addRejectingPath(e.getKey(), e.getValue());
 		}
+		red.setAcceptingEndings(red.getAcceptingEndings() + blue.getAcceptingEndings());
+		red.setRejectingEndings(red.getRejectingEndings() + blue.getRejectingEndings());
 
 		if(finalMerge) {
 			apta.update(red, blue);
@@ -95,6 +97,8 @@ public abstract class StateMerger {
 		for (Map.Entry<String, Integer> e : blue.getRejectingPaths().entrySet()) {
 			red.addRejectingPath(e.getKey(), -e.getValue());
 		}
+		red.setAcceptingEndings(red.getAcceptingEndings() - blue.getAcceptingEndings());
+		red.setRejectingEndings(red.getRejectingEndings() - blue.getRejectingEndings());
 
 		blue.setRepresentative(blue);
 	}

@@ -38,9 +38,9 @@ public class DimacsFileGenerator {
 	private ConsistencyGraph cg;
 	private int colors;
 	private int maxVar;
-	private int vertices;
-	private Set<String> alphabet;
-	private int[][] x;
+	private int sinks;
+	private List<String> alphabet;
+	private Map<Integer, int[]> x;
 	private Map<String, Integer>[][] y;
 	private Map<String, Integer>[] u;
 	private int[] z;
@@ -61,6 +61,8 @@ public class DimacsFileGenerator {
 	private int color = 0;
 	private List<Integer> ends;
 	private boolean fixMode;
+	private Map<Integer, Integer> sink;
+	private Map<String, Integer>[][] y2sink;
 
 	private Set<Node> redNodes;
 	private Set<Node> notRedNotSinkNodes;
@@ -70,6 +72,7 @@ public class DimacsFileGenerator {
 		this.apta = apta;
 		this.cg = cg;
 		this.colors = colors;
+		this.sinks = Settings.getSinksAmount();
 		this.SB = getSBStrategyByNum(Settings.SB_STRATEGY);
 		this.noisyP = Settings.ERRORS_PERCENT;
 		this.maxVar = 1;
@@ -78,12 +81,23 @@ public class DimacsFileGenerator {
 		this.ends = new ArrayList<>();
 		this.fixMode = Settings.LOOP_MODE;
 
-		this.x = new int[vertices][colors];
+		this.redNodes = apta.getRedNodes();
+		this.notRedNotSinkNodes = apta.getNotRedNotSinkNodes();
+		this.sinkNodes = apta.getSinkStates();
+
+		this.x = new HashMap<>();
 		this.y = new HashMap[colors][colors];
 		this.z = new int[colors];
-		for (int v = 0; v < vertices; v++) {
+		for (Node node : redNodes) {
+			x.put(node.getNumber(), new int[colors]);
 			for (int i = 0; i < colors; i++) {
-				x[v][i] = newVariable();
+				x.get(node.getNumber())[i] = newVariable();
+			}
+		}
+		for (Node node : notRedNotSinkNodes) {
+			x.put(node.getNumber(), new int[colors]);
+			for (int i = 0; i < colors; i++) {
+				x.get(node.getNumber())[i] = newVariable();
 			}
 		}
 
@@ -111,23 +125,25 @@ public class DimacsFileGenerator {
 		}
 
 		if (SB == SBStrategy.BFS_SB || SB == SBStrategy.DFS_SB) {
+			int startColor = redNodes.size() - 1;
+
 			this.e = new int[colors][colors];
-			for (int i = 0; i < colors; i++) {
+			for (int i = startColor; i < colors; i++) {
 				for (int j = i + 1; j < colors; j++) {
 					e[i][j] = newVariable();
 				}
 			}
 
 			this.p = new int[colors][colors];
-			for (int i = 1; i < colors; i++) {
-				for (int j = 0; j < i; j++) {
+			for (int i = startColor + 1; i < colors; i++) {
+				for (int j = startColor; j < i; j++) {
 					p[i][j] = newVariable();
 				}
 			}
 
 			this.m = new HashMap[colors][colors];
-			for (int i = 0; i < colors; i++) {
-				for (int j = i + 1; j < colors; j++) {
+			for (int i = startColor; i < colors; i++) {
+				for (int j = startColor + 1; j < colors; j++) {
 					m[i][j] = new HashMap<>();
 					for (String label : alphabet) {
 						m[i][j].put(label, newVariable());
@@ -171,6 +187,25 @@ public class DimacsFileGenerator {
 				f.add(newVariable());
 			}
 		}
+
+		if (Settings.SINKS_MODE > 0) {
+			sink = new HashMap<>();
+			for (Node node : redNodes) {
+				sink.put(node.getNumber(), newVariable());
+			}
+			for (Node node : notRedNotSinkNodes) {
+				sink.put(node.getNumber(), newVariable());
+			}
+			y2sink = new HashMap[colors][sinks];
+			for (int i = 0; i < colors; i++) {
+				for (int j = 0; j < sinks; j++) {
+					y2sink[i][j] = new HashMap<>();
+					for (String label : alphabet) {
+						y2sink[i][j].put(label, newVariable());
+					}
+				}
+			}
+		}
 	}
 
 	public String generateFile() throws IOException {
@@ -178,6 +213,10 @@ public class DimacsFileGenerator {
 		try (PrintWriter tmpPW = new PrintWriter(tmp)) {
 			Buffer buffer = new Buffer(tmpPW);
 			try (PrintWriter pwDF = new PrintWriter(dimacsFile)) {
+
+				if (SB == SBStrategy.BFS_SB || SB == SBStrategy.DFS_SB) {
+					printFixingRedNodesConstraints(buffer);
+				}
 
 				printOneAtLeast(buffer);
 				printAtMostOneX(buffer, Settings.AT_MOST_ONE_OPTION);
@@ -192,8 +231,7 @@ public class DimacsFileGenerator {
 				}
 
 				if (SB == SBStrategy.BFS_SB || SB == SBStrategy.DFS_SB) {
-					//  root has 0 color
-					buffer.addClause(x[0][0]);
+					//buffer.addClause(x.get(0)[holdColor()]);
 					printSBPEdgeExist(buffer);
 					printSBPMinimalSymbol(buffer);
 					// printSBPChildrenOrder(buffer);
@@ -292,8 +330,12 @@ public class DimacsFileGenerator {
 		}
 	}
 
-	public int[][] getX() {
+	public Map<Integer, int[]> getX() {
 		return x;
+	}
+
+	public Map<Integer,Integer> getSinks() {
+		return sink;
 	}
 
 	public Map<Integer, Integer> getF() {
@@ -308,13 +350,75 @@ public class DimacsFileGenerator {
 		}
 	}
 
+	private void printFixingRedNodesConstraints(Buffer buffer) {
+		for (Node red : redNodes) {
+			red.setColor(holdColor());
+		}
+		int redColor;
+		int redNumber;
+		int targetColor;
+		for (Node red : redNodes) {
+			redColor = red.getColor();
+			redNumber = red.getNumber();
+			buffer.addClause(x.get(redNumber)[redColor]);
+			if (sinks > 0) {
+				buffer.addClause(-sink.get(redNumber));
+			}
+			for (int i = 0; i < colors; i++) {
+				if (i == redColor) {
+					continue;
+				}
+				buffer.addClause(-x.get(redNumber)[i]);
+			}
+			if (red.isAcceptable()) {
+				buffer.addClause(z[redColor]);
+			} else if (red.isRejectable()) {
+				buffer.addClause(-z[redColor]);
+			}
+			for (String label : apta.getAlphabet()) {
+				Node target = red.getChild(label);
+				if (target != null) {
+					targetColor = target.getColor();
+					if (redNodes.contains(target)) {
+						buffer.addClause(y[redColor][targetColor].get(label));
+						for (int i = 0; i < colors; i++) {
+							if (i == targetColor) {
+								continue;
+							}
+							buffer.addClause(-y[redColor][i].get(label));
+						}
+						for (int i = 0; i < sinks; i++) {
+							buffer.addClause(-y2sink[redColor][i].get(label));
+						}
+					} else if (sinkNodes.contains(target)) {
+						for (int i = 0; i < colors; i++) {
+							buffer.addClause(-y[redColor][i].get(label));
+						}
+						for (int i = 0; i < sinks; i++) {
+							if (!target.isParticularSink(i)) {
+								buffer.addClause(-y2sink[redColor][i].get(label));
+							}
+						}
+					}
+				}
+			}
+			for (int to : cg.getRBEdges().get(red.getNumber())) {
+				buffer.addClause(-x.get(to)[redColor]);
+			}
+		}
+	}
+
 	// Each vertex has at least one color.
 	// x_{v,1} or x_{v,2} or ... or x_{v, |C|}
 	private void printOneAtLeast(Buffer buffer) {
-		for (int v = 0; v < vertices; v++) {
-			StringBuilder sb = new StringBuilder();
+		StringBuilder sb;
+		for (Node node : notRedNotSinkNodes) {
+			sb = new StringBuilder();
 			for (int i = 0; i < colors; i++) {
-				sb.append(x[v][i]).append(" ");
+				sb.append(x.get(node.getNumber())[i]).append(" ");
+			}
+			if (sinks > 0) {
+				sb.append(sink.get(node.getNumber()));
 			}
 			buffer.addClause(sb);
 		}
@@ -324,27 +428,59 @@ public class DimacsFileGenerator {
 	// (!x_{v,i} or z_i) and (!x_{w,i} or !z_i), where v is acc, w is rej
 	private void printAccVertDiffColorRej(Buffer buffer) {
 		for (int i = 0; i < colors; i++) {
-			for (Integer acc : apta.getAcceptableNodes()) {
-				buffer.addClause(-x[acc][i], z[i]);
-			}
-			for (Integer rej : apta.getRejectableNodes()) {
-				buffer.addClause(-x[rej][i], -z[i]);
+			for (Node node : notRedNotSinkNodes) {
+				if (node.isAcceptable()) {
+					buffer.addClause(-x.get(node.getNumber())[i], z[i]);
+				} else if (node.isRejectable()) {
+					buffer.addClause(-x.get(node.getNumber())[i], -z[i]);
+				}
 			}
 		}
 	}
 
 	// A parent relation is set when a vertex and its parent are colored
-	// (y_{i,j,a} or !x_{p(v),i} or !x_{v,i})
+	// (y_{i,j,a} or !x_{p(v),i} or !x_{v,j})
 	private void printParentRelationIsSet(Buffer buffer) {
-		for (int v = 0; v < vertices; v++) {
-			for (int i = 0; i < colors; i++) {
-				for (int j = 0; j < colors; j++) {
-					Node cur = apta.getNode(v);
-					for (Entry<String, Set<Node>> e : cur.getParents().entrySet()) {
-						for (Node parent : e.getValue()) {
-							buffer.addClause(y[i][j].get(e.getKey()), -x[parent.getNumber()][i], -x[v][j]);
+		Node child;
+		for (Node cur : redNodes) {
+			for (Entry<String, Node> e : cur.getChildren().entrySet()) {
+				child = e.getValue();
+				if (child.getSinkType() == Node.SINK_TYPE.NON_SINK) {
+					for (int i = 0; i < colors; i++) {
+						for (int j = 0; j < colors; j++) {
+							buffer.addClause(y[i][j].get(e.getKey()), -x.get(cur.getNumber())[i], -x.get(child.getNumber())[j]);
+						}
+						for (int j = 0; j < sinks; j++) {
+							buffer.addClause(-y2sink[i][j].get(e.getKey()), -x.get(cur.getNumber())[i]);
 						}
 					}
+				}
+			}
+		}
+		StringBuilder sb;
+		for (Node cur : notRedNotSinkNodes) {
+			for (Entry<String, Node> e : cur.getChildren().entrySet()) {
+				child = e.getValue();
+				for (int i = 0; i < colors; i++) {
+					for (int j = 0; j < colors; j++) {
+						buffer.addClause(y[i][j].get(e.getKey()), -x.get(cur.getNumber())[i], -x.get(child.getNumber())[j]);
+					}
+					if (sinks > 0) {
+						sb = new StringBuilder();
+						for (int j = 0; j < sinks; j++) {
+							if (child.isParticularSink(j)) {
+								sb.append(y2sink[i][j].get(e.getKey())).append(" ");
+							} else {
+								buffer.addClause(-y2sink[i][j].get(e.getKey()), -x.get(cur.getNumber())[i]);
+							}
+						}
+						sb.append(-x.get(cur.getNumber())[i]);
+						sb.append(" ").append(-sink.get(child.getNumber()));
+						buffer.addClause(sb);
+					}
+				}
+				if (sinks > 0) {
+					buffer.addClause(-sink.get(cur.getNumber()), sink.get(child.getNumber()));
 				}
 			}
 		}
@@ -360,20 +496,25 @@ public class DimacsFileGenerator {
 				for (int j = 0; j < colors; j++) {
 					yList.add(y[i][j].get(st));
 				}
+				for (int j = 0; j < sinks; j++) {
+					yList.add(y2sink[i][j].get(st));
+				}
 				atMostOne(buffer, yList, amo);
 			}
 		}
 	}
 
-		// each vertex has at most one color
-		// (!x_{v,i} or !x_{v,j}) where i < j
-
+	// each vertex has at most one color
+	// (!x_{v,i} or !x_{v,j}) where i < j
 	private void printAtMostOneX(Buffer buffer, int amo) {
 		List<Integer> xList = new ArrayList<>();
-		for (int v = 0; v < vertices; v++) {
+		for (Node node : notRedNotSinkNodes) {
 			xList.clear();
-			for (int i : x[v]) {
+			for (int i : x.get(node.getNumber())) {
 				xList.add(i);
+			}
+			if (sinks > 0) {
+				xList.add(sink.get(node.getNumber()));
 			}
 			atMostOne(buffer, xList, amo);
 		}
@@ -388,6 +529,9 @@ public class DimacsFileGenerator {
 				for (int j = 0; j < colors; j++) {
 					sb.append(y[i][j].get(st)).append(" ");
 				}
+				for (int j = 0; j < sinks; j++) {
+					sb.append(y2sink[i][j].get(st)).append(" ");
+				}
 				buffer.addClause(sb);
 			}
 		}
@@ -396,14 +540,31 @@ public class DimacsFileGenerator {
 	// a parent relation forces a vertex once the parent is colored
 	// (!y_{i,j,l(v)} or !x_{p(v),i} or x_{v,i})
 	private void printParentRelationForces(Buffer buffer) {
-		for (int v = 0; v < vertices; v++) {
-			for (int i = 0; i < colors; i++) {
-				for (int j = 0; j < colors; j++) {
-					Node cur = apta.getNode(v);
-					for (Entry<String, Set<Node>> e : cur.getParents().entrySet()) {
-						for (Node parent : e.getValue()) {
-							buffer.addClause(-y[i][j].get(e.getKey()), -x[parent.getNumber()][i], x[v][j]);
+		Node child;
+		for (Node cur : redNodes) {
+			for (Entry<String, Node> e : cur.getChildren().entrySet()) {
+				child = e.getValue();
+				if (child.getSinkType() == Node.SINK_TYPE.NON_SINK) {
+					for (int i = 0; i < colors; i++) {
+						for (int j = 0; j < colors; j++) {
+							buffer.addClause(-y[i][j].get(e.getKey()), -x.get(cur.getNumber())[i], x.get(child.getNumber())[j]);
 						}
+						for (int j = 0; j < sinks; j++) {
+							buffer.addClause(-y2sink[i][j].get(e.getKey()), -x.get(cur.getNumber())[i], sink.get(child.getNumber()));
+						}
+					}
+				}
+			}
+		}
+		for (Node cur : notRedNotSinkNodes) {
+			for (Entry<String, Node> e : cur.getChildren().entrySet()) {
+				child = e.getValue();
+				for (int i = 0; i < colors; i++) {
+					for (int j = 0; j < colors; j++) {
+						buffer.addClause(-y[i][j].get(e.getKey()), -x.get(cur.getNumber())[i], x.get(child.getNumber())[j]);
+					}
+					for (int j = 0; j < sinks; j++) {
+						buffer.addClause(-y2sink[i][j].get(e.getKey()), -x.get(cur.getNumber())[i], sink.get(child.getNumber()));
 					}
 				}
 			}
@@ -413,14 +574,14 @@ public class DimacsFileGenerator {
 	// all determinization conflicts explicitly added as clauses
 	// (!x_{v,i} or !x_{w,i}) where (v,w) - edge from cg
 	private void printConflictsFromCG(Buffer buffer) {
-		for (Entry<Integer, Set<Integer>> e : cg.getEdges().entrySet()) {
+		for (Entry<Integer, Set<Integer>> e : cg.getBBEdges().entrySet()) {
 			int v = e.getKey();
 			for (int w : e.getValue()) {
 				if (w > v) {
 					continue;
 				}
 				for (int i = 0; i < colors; i++) {
-					buffer.addClause(-x[v][i], -x[w][i]);
+					buffer.addClause(-x.get(v)[i], -x.get(w)[i]);
 				}
 			}
 		}
@@ -436,8 +597,8 @@ public class DimacsFileGenerator {
 				int uli = u[i].get(label);
 				StringBuilder tmp = new StringBuilder(-uli + " ");
 				for (int vi : vl) {
-					buffer.addClause(uli, -x[vi][i]);
-					tmp.append(x[vi][i]).append(" ");
+					buffer.addClause(uli, -x.get(vi)[i]);
+					tmp.append(x.get(vi)[i]).append(" ");
 				}
 				buffer.addClause(tmp);
 			}
@@ -453,12 +614,11 @@ public class DimacsFileGenerator {
 		}
 	}
 
-
 	// SBP
 
 	// e_{i,j} <=> y_{i,j,k_1} or ... or y_{i,j,k_n}
 	private void printSBPEdgeExist(Buffer buffer) {
-		for (int i = 0; i < colors; i++) {
+		for (int i = color; i < colors; i++) {
 			for (int j = i + 1; j < colors; j++) {
 				int eij = e[i][j];
 				StringBuilder tmp = new StringBuilder(-eij + " ");
@@ -469,14 +629,28 @@ public class DimacsFileGenerator {
 				buffer.addClause(tmp);
 			}
 		}
+		int i = color - 1;
+		for (int j = i + 1; j < colors; j++) {
+			int eij = e[i][j];
+			StringBuilder tmp = new StringBuilder(-eij + " ");
+			for (String label : alphabet) {
+				for (int k = 0; k < color; k++) {
+					buffer.addClause(eij, -y[k][j].get(label));
+					tmp.append(y[k][j].get(label)).append(" ");
+				}
+			}
+			buffer.addClause(tmp);
+		}
+
 	}
 
 	// m_{i,j,c_k} <=> e_{i,j} and y_{i,j,c_k} and !y_{i,j,c_(k-1)} and ... and
 	// !y_{i,j,c_1}
 	private void printSBPMinimalSymbol(Buffer buffer) {
-		for (int i = 0; i < colors; i++) {
+		for (int i = color; i < colors; i++) {
 			for (int j = i + 1; j < colors; j++) {
-				for (String label : alphabet) {
+				for (int index = 0; index < alphabet.size(); index++) {
+					String label = alphabet.get(index);
 					int curM = m[i][j].get(label);
 
 					buffer.addClause(-curM, e[i][j]);
@@ -496,18 +670,43 @@ public class DimacsFileGenerator {
 				}
 			}
 		}
+		int i = color - 1;
+		for (int j = i + 1; j < colors; j++) {
+			for (int index = 0; index < alphabet.size(); index++) {
+				String label = alphabet.get(index);
+				int curM = m[i][j].get(label);
+
+				buffer.addClause(-curM, e[i][j]);
+				StringBuilder tmp1 = new StringBuilder(-curM + " ");
+				for (int k = 0; k < color; k++) {
+					tmp1.append(y[k][j].get(label)).append(" ");
+					StringBuilder tmp2 = new StringBuilder(curM + " " + -e[i][j] + " " + -y[k][j].get(label) + " ");
+					for (String prevLabel : alphabet) {
+						if (prevLabel.equals(label)) {
+							break;
+						}
+						buffer.addClause(-curM, -y[k][j].get(prevLabel));
+						for (int q = 0; q < color; q++) {
+							tmp2.append(y[q][j].get(prevLabel)).append(" ");
+						}
+					}
+					buffer.addClause(tmp2);
+				}
+				buffer.addClause(tmp1);
+			}
+		}
 	}
 
 	// p_{i,j} <=> e_{j,i} and !e{j-1,i} and ... and !e{0, i}
 	private void printSBPParentBFS(Buffer buffer) {
-		for (int i = 1; i < colors; i++) {
-			for (int j = 0; j < i; j++) {
+		for (int i = color; i < colors; i++) {
+			for (int j = color - 1; j < i; j++) {
 				StringBuilder tmp = new StringBuilder(p[i][j] + " " + -e[j][i]
 						+ " ");
 
 				buffer.addClause(-p[i][j], e[j][i]);
 
-				for (int k = 0; k < j; k++) {
+				for (int k = color - 1; k < j; k++) {
 					buffer.addClause(-p[i][j], -e[k][i]);
 
 					tmp.append(e[k][i]).append(" ");
@@ -519,8 +718,8 @@ public class DimacsFileGenerator {
 
 	// p_{i,j} <=> e_{j,i} and !e{j+1,i} and ... and !e{i-1, i}
 	private void printSBPParentDFS(Buffer buffer) {
-		for (int i = 1; i < colors; i++) {
-			for (int j = 0; j < i; j++) {
+		for (int i = color; i < colors; i++) {
+			for (int j = color - 1; j < i; j++) {
 				StringBuilder tmp = new StringBuilder(p[i][j] + " " + -e[j][i]
 						+ " ");
 				buffer.addClause(-p[i][j], e[j][i]);
@@ -549,8 +748,8 @@ public class DimacsFileGenerator {
 	// if alphabet size greater then 2 BFS
 	// p_{i,j} and p_{i+1,j} and m_{j,i,c_k} => !m_{j,i+1,c_(k-q)}
 	private void printSBPOrderByChildrenSymbolBFS(Buffer buffer) {
-		for (int i = 1; i < colors - 1; i++) {
-			for (int j = 0; j < i; j++) {
+		for (int i = color; i < colors - 1; i++) {
+			for (int j = color - 1; j < i; j++) {
 				for (String label : alphabet) {
 					for (String prevLabel : alphabet) {
 						if (label.equals(prevLabel)) {
@@ -568,8 +767,8 @@ public class DimacsFileGenerator {
 	// if alphabet size greater then 2 DFS
 	// p_{i,j} and p_{i+t,j} and m_{j,i,c_k} => !m_{j,i+t,c_(k-q)}
 	private void printSBPOrderByChildrenSymbolDFS(Buffer buffer) {
-		for (int i = 1; i < colors - 1; i++) {
-			for (int j = 0; j < i; j++) {
+		for (int i = color; i < colors - 1; i++) {
+			for (int j = color - 1; j < i; j++) {
 				for (int s = i + 1; s < colors; s++) {
 					for (String label : alphabet) {
 						for (String prevLabel : alphabet) {
@@ -589,19 +788,34 @@ public class DimacsFileGenerator {
 	// if alphabet size equal to 2 BFS
 	// p_{i,j} and p_{i+1,j} => y_{j,i,0} and y_{j,i+1,1}
 	private void printSBPOrderByChildrenSymbolForSizeTwoBFS(Buffer buffer) {
-		for (int i = 1; i < colors - 1; i++) {
-			for (int j = 0; j < i; j++) {
-				buffer.addClause(-p[i][j], -p[i + 1][j], y[j][i].get("0"));
-				buffer.addClause(-p[i][j], -p[i + 1][j], y[j][i + 1].get("1"));
+		for (int i = color; i < colors - 1; i++) {
+			int j = color - 1;
+			for (int index = 1; index < alphabet.size(); index++) {
+				String label = alphabet.get(index);
+				for (String prevLabel : alphabet) {
+					if (label.equals(prevLabel)) {
+						break;
+					}
+					buffer.addClause(-p[i][j], -p[i + 1][j],
+							-m[j][i].get(label),
+							-m[j][i + 1].get(prevLabel));
+				}
+			}
+		}
+		for (int i = color + 1; i < colors - 1; i++) {
+			for (int j = color; j < i; j++) {
+				buffer.addClause(-p[i][j], -p[i + 1][j], y[j][i].get(alphabet.get(0)));
+				buffer.addClause(-p[i][j], -p[i + 1][j], y[j][i + 1].get(alphabet.get(1)));
 			}
 		}
 	}
 
+	//TODO: make it works
 	// if alphabet size equal to 2 DFS
 	// p_{i,j} and p_{i+q,j} => y_{j,i,0} and y_{j,i+q,1}
 	private void printSBPOrderByChildrenSymbolForSizeTwoDFS(Buffer buffer) {
-		for (int i = 1; i < colors - 1; i++) {
-			for (int j = 0; j < i; j++) {
+		for (int i = color; i < colors - 1; i++) {
+			for (int j = color - 1; j < i; j++) {
 				for (int s = i + 1; s < colors; s++) {
 					buffer.addClause(-p[i][j], -e[j][s], y[j][i].get("0"));
 					buffer.addClause(-p[i][j], -e[j][s], y[j][s].get("1"));
@@ -612,9 +826,9 @@ public class DimacsFileGenerator {
 
 	// p_{i,j} => !p_{i+1,j-q}
 	private void printSBPOrderInLayerBFS(Buffer buffer) {
-		for (int i = 1; i < colors - 1; i++) {
-			for (int j = 0; j < i; j++) {
-				for (int k = 0; k < j; k++) {
+		for (int i = color; i < colors - 1; i++) {
+			for (int j = color - 1; j < i; j++) {
+				for (int k = color - 1; k < j; k++) {
 					buffer.addClause(-p[i][j], -p[i + 1][k]);
 				}
 			}
@@ -623,8 +837,8 @@ public class DimacsFileGenerator {
 
 	// p_{i,j} => !t_{i+k,j-q}
 	private void printSBPSubtreeNotIntersectDFS(Buffer buffer) {
-		for (int i = 1; i < colors - 1; i++) {
-			for (int j = 0; j < i; j++) {
+		for (int i = color; i < colors - 1; i++) {
+			for (int j = color - 1; j < i; j++) {
 				for (int t = j + 1; t < i; t++) {
 					for (int s = i + 1; s < colors; s++) {
 						buffer.addClause(-p[i][j], -e[t][s]);
@@ -636,9 +850,9 @@ public class DimacsFileGenerator {
 
 	// p_{i,1} or ... or p_{i,i-1}
 	private void printSBPParentExist(Buffer buffer) {
-		for (int i = 1; i < colors; i++) {
+		for (int i = color; i < colors; i++) {
 			StringBuilder tmp = new StringBuilder();
-			for (int j = 0; j < i; j++) {
+			for (int j = color - 1; j < i; j++) {
 				tmp.append(p[i][j]).append(" ");
 			}
 			buffer.addClause(tmp);
@@ -648,7 +862,7 @@ public class DimacsFileGenerator {
 	private void printAcceptableCliqueSB(Buffer buffer) {
 		for (int i : acceptableClique) {
 			if (color < colors) {
-				buffer.addClause(x[i][color]);
+				buffer.addClause(x.get(i)[color]);
 				buffer.addClause(z[color]);
 				color++;
 			} else {
@@ -660,7 +874,7 @@ public class DimacsFileGenerator {
 	private void printRejectableCliqueSB(Buffer buffer) {
 		for (int i : rejectableClique) {
 			if (color < colors) {
-				buffer.addClause(x[i][color]);
+				buffer.addClause(x.get(i)[color]);
 				buffer.addClause(-z[color]);
 				color++;
 			} else {
@@ -672,7 +886,7 @@ public class DimacsFileGenerator {
 	private void printCommonCliqueSB(Buffer buffer) {
 		for (int i : commonClique) {
 			if (color < colors) {
-				buffer.addClause(x[i][color]);
+				buffer.addClause(x.get(i)[color]);
 				color++;
 			} else {
 				break;
@@ -777,9 +991,9 @@ public class DimacsFileGenerator {
 		for (int i = 0; i < colors; i++) {
 			for (int v = 0; v < f.size(); v++) {
 				if (apta.getAcceptableNodes().contains(ends.get(v))) {
-					buffer.addClause(f.get(v), -x[ends.get(v)][i], z[i]);
+					buffer.addClause(f.get(v), -x.get(ends.get(v))[i], z[i]);
 				} else {
-					buffer.addClause(f.get(v), -x[ends.get(v)][i], -z[i]);
+					buffer.addClause(f.get(v), -x.get(ends.get(v))[i], -z[i]);
 				}
 			}
 		}
@@ -985,5 +1199,15 @@ public class DimacsFileGenerator {
 
 	private int newVariable() {
 		return maxVar++;
+	}
+
+	private int holdColor() {
+		return color++;
+	}
+
+	private static <T extends Comparable<? super T>> List<T> asSortedList(Collection<T> c) {
+		List<T> list = new ArrayList<>(c);
+		Collections.sort(list);
+		return list;
 	}
 }

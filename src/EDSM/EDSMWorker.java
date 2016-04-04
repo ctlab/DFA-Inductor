@@ -61,13 +61,25 @@ public class EDSMWorker {
 				}
 			}
 			if (pair.score > 0) {
-				if (pair.score > bestPair.score) {
-					bestPair = pair;
+				if (Settings.EXTEND_FIRST) {
+					if (bestPair.score >= 0 && pair.score > bestPair.score) {
+						bestPair = pair;
+					}
+				} else {
+					if (pair.score > bestPair.score) {
+						bestPair = pair;
+					}
 				}
 			}
 			if (pair.score < 0) {
-				if (bestPair.score < 0 && bestPair.score < pair.score || bestPair.score == 0) {
-					bestPair = pair;
+				if (Settings.EXTEND_FIRST) {
+					if (bestPair.score < 0 && bestPair.score < pair.score || bestPair.score >= 0) {
+						bestPair = pair;
+					}
+				} else {
+					if (bestPair.score < 0 && bestPair.score < pair.score || bestPair.score == 0) {
+						bestPair = pair;
+					}
 				}
 			}
 		}

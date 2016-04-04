@@ -7,7 +7,8 @@ import misc.Settings;
 import java.util.*;
 
 public class ConsistencyGraph {
-	private Map<Integer, Set<Integer>> edges;
+	private Map<Integer, Set<Integer>> RBedges;
+	private Map<Integer, Set<Integer>> BBedges;
 	private APTA apta;
 	private Set<Integer> acceptableClique;
 	private Set<Integer> rejectableClique;
@@ -19,61 +20,75 @@ public class ConsistencyGraph {
 		this.apta = apta;
 
 		if (!Settings.NOISY_MODE) {
-			for (int i = 0; i < apta.getSize(); i++) {
-				edges.put(i, new HashSet<Integer>());
+			for (int i = 0; i < apta.getRealSize(); i++) {
+				RBedges.put(i, new HashSet<Integer>());
+				BBedges.put(i, new HashSet<Integer>());
 			}
 			Set<Integer> acceptableNodes = apta.getAcceptableNodes();
 			Set<Integer> rejectableNodes = apta.getRejectableNodes();
 
-			for (int i : acceptableNodes) {
-				for (int j : rejectableNodes) {
-					edges.get(i).add(j);
-					edges.get(j).add(i);
-				}
-			}
-
-			for (Node first : apta.getRedNodes()) {
-				for (Node second : apta.getRedNodes()) {
-					if (first.getNumber() <= second.getNumber()) {
-						continue;
-					}
-					edges.get(first.getNumber()).add(second.getNumber());
-					edges.get(second.getNumber()).add(first.getNumber());
-				}
-			}
-
+//			for (Node first : apta.getRedNodes()) {
+//				for (Node second : apta.getRedNodes()) {
+//					if (first.getNumber() <= second.getNumber()) {
+//						continue;
+//					}
+//					edges.get(first.getNumber()).add(second.getNumber());
+//					edges.get(second.getNumber()).add(first.getNumber());
+//				}
+//			}
+//
 			ConsistencyGraphWorker cgWorker = new ConsistencyGraphWorker();
-
+//
+//			for (Node red : apta.getRedNodes()) {
+//				for (Node notRed : apta.getNotRedNodes()) {
+//					if (red.isAcceptable() && notRed.isRejectable() || red.isRejectable() && notRed.isAcceptable()) {
+//						continue;
+//					}
+//					if (cgWorker.mergeAndUndo(red, notRed) < 0) {
+//						edges.get(red.getNumber()).add(notRed.getNumber());
+//						edges.get(notRed.getNumber()).add(red.getNumber());
+//					}
+//				}
+//			}
 			for (Node red : apta.getRedNodes()) {
-				for (Node notRed : apta.getNotRedNodes()) {
-					if (red.isAcceptable() && notRed.isRejectable() || red.isRejectable() && notRed.isAcceptable()) {
+				for (Node notRed : apta.getNotRedNotSinkNodes()) {
+					if (red.getNumber() >= notRed.getNumber()) {
 						continue;
 					}
-					if (cgWorker.mergeAndUndo(red, notRed) < 0) {
-						edges.get(red.getNumber()).add(notRed.getNumber());
-						edges.get(notRed.getNumber()).add(red.getNumber());
+					if (red.isAcceptable() && notRed.isRejectable() || red.isRejectable() && notRed.isAcceptable() || cgWorker.mergeAndUndo(red, notRed) < 0) {
+						RBedges.get(red.getNumber()).add(notRed.getNumber());
+						RBedges.get(notRed.getNumber()).add(red.getNumber());
 					}
 				}
 			}
-			for (Node notRed1 : apta.getNotRedNodes()) {
-				for (Node notRed2 : apta.getNotRedNodes()) {
+
+			for (Node notRed1 : apta.getNotRedNotSinkNodes()) {
+				for (Node notRed2 : apta.getNotRedNotSinkNodes()) {
 					if (notRed1.getNumber() >= notRed2.getNumber()) {
 						continue;
 					}
-					if (notRed1.isAcceptable() && notRed2.isRejectable() || notRed1.isRejectable() && notRed2.isAcceptable()) {
-						continue;
-					}
-					if (cgWorker.mergeAndUndo(notRed1, notRed2) < 0) {
-						edges.get(notRed1.getNumber()).add(notRed2.getNumber());
-						edges.get(notRed2.getNumber()).add(notRed1.getNumber());
+					if (notRed1.isAcceptable() && notRed2.isRejectable() || notRed1.isRejectable() && notRed2.isAcceptable() || cgWorker.mergeAndUndo(notRed1, notRed2) < 0) {
+						BBedges.get(notRed1.getNumber()).add(notRed2.getNumber());
+						BBedges.get(notRed2.getNumber()).add(notRed1.getNumber());
 					}
 				}
 			}
 		}
 	}
 
+	public Map<Integer, Set<Integer>> getRBEdges() {
+		return RBedges;
+	}
+
+	public Map<Integer, Set<Integer>> getBBEdges() {
+		return BBedges;
+	}
+
 	public Map<Integer, Set<Integer>> getEdges() {
-		return edges;
+		Map<Integer, Set<Integer>> map = new HashMap<>();
+		map.putAll(BBedges);
+		map.putAll(RBedges);
+		return map;
 	}
 
 	private class ConsistencyGraphWorker {

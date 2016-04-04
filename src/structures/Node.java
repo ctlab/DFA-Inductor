@@ -10,9 +10,15 @@ public class Node {
 		ACCEPTABLE, COMMON, REJECTABLE
 	}
 
+	public enum SINK_TYPE {
+		NON_SINK, ACCEPTING_SINK, REJECTING_SINK, LOW_SINK
+	}
+
 	private int number;
 	private Map<String, Node> children;
 	private Map<String, Set<Node>> parents;
+	private int acceptingEndings;
+	private int rejectingEndings;
 	private Status status;
 	private Status statusBackup;
 	private int depth;
@@ -22,6 +28,7 @@ public class Node {
 	private Map<String, Integer> acceptingPaths;
 	private Map<String, Integer> rejectingPaths;
 	private Node representative;
+	private int color;
 
 	public Node(int number) {
 		init(number, 0);
@@ -46,9 +53,12 @@ public class Node {
 		this.rejectingPaths = new HashMap<>();
 		this.children = new HashMap<>();
 		this.parents = new HashMap<>();
+		this.acceptingEndings = 0;
+		this.rejectingEndings = 0;
 		this.status = Status.COMMON;
 		this.statusBackup = null;
 		this.representative = this;
+		this.color = -1;
 	}
 
 	public void backup() {
@@ -66,11 +76,31 @@ public class Node {
 	public void restore() {
 		if (statusBackup != null && depthBackup != 0) {
 			status = statusBackup;
+			if (status == Status.COMMON) {
+				acceptingEndings = 0;
+				rejectingEndings = 0;
+			}
 			depth = depthBackup;
 
 			statusBackup = null;
 			depthBackup = 0;
 		}
+	}
+
+	public int getAcceptingEndings() {
+		return acceptingEndings;
+	}
+
+	public void setAcceptingEndings(int acceptingEndings) {
+		this.acceptingEndings = acceptingEndings;
+	}
+
+	public int getRejectingEndings() {
+		return rejectingEndings;
+	}
+
+	public void setRejectingEndings(int rejectingEndings) {
+		this.rejectingEndings = rejectingEndings;
 	}
 
 	public int getDepth() {
@@ -160,6 +190,21 @@ public class Node {
 
 	public void setStatus(Status status) {
 		this.status = status;
+		if (status == Status.ACCEPTABLE) {
+			if (acceptingEndings == 0) {
+				acceptingEndings = 1;
+			}
+			if (rejectingEndings != 0) {
+				rejectingEndings = 0;
+			}
+		} else if (status == Status.REJECTABLE) {
+			if (rejectingEndings == 0) {
+				rejectingEndings = 1;
+			}
+			if (acceptingEndings != 0) {
+				acceptingEndings = 0;
+			}
+		}
 	}
 
 	public Map<String, Set<Node>> getParents() {
@@ -205,5 +250,82 @@ public class Node {
 
 	public void setRepresentative(Node representative) {
 		this.representative = representative;
+	}
+
+	public int getColor() {
+		return color;
+	}
+
+	public void setColor(int color) {
+		this.color = color;
+	}
+
+	public SINK_TYPE getSinkType() {
+		int sinkMode = Settings.SINKS_MODE;
+		if (sinkMode == 0) {
+			return SINK_TYPE.NON_SINK;
+		}
+		if (sinkMode == 3 || sinkMode == 4 || sinkMode == 5) {
+			if (isLowInformationalSink()) {
+				return SINK_TYPE.LOW_SINK;
+			}
+		}
+		if (sinkMode == 1 || sinkMode ==  2 || sinkMode == 4 || sinkMode == 5) {
+			if (isRejectingSink()) {
+				return SINK_TYPE.REJECTING_SINK;
+			}
+		}
+		if (sinkMode == 2 || sinkMode == 5) {
+			if (isAcceptingSink()) {
+				return SINK_TYPE.ACCEPTING_SINK;
+			}
+		}
+		return SINK_TYPE.NON_SINK;
+	}
+
+	public boolean isParticularSink(int i) {
+		int sinkMode = Settings.SINKS_MODE;
+		if (sinkMode == 0) {
+			return false;
+		}
+		switch (i) {
+			case 0:
+				if (sinkMode == 1 || sinkMode == 2 || sinkMode == 4 || sinkMode == 5) {
+					return isRejectingSink();
+				}
+				if (sinkMode == 3) {
+					return isLowInformationalSink();
+				}
+				return false;
+			case 1:
+				if (sinkMode == 2 || sinkMode == 5) {
+					return isAcceptingSink();
+				}
+				if (sinkMode == 4) {
+					return isLowInformationalSink();
+				}
+				return false;
+			case 2:
+				if (sinkMode == 5) {
+					return isLowInformationalSink();
+				}
+				return false;
+		}
+		return false;
+	}
+
+	public boolean isLowInformationalSink() {
+		Node node = findRepresentative();
+		return node.acceptingPathsSum + node.getAcceptingEndings() < Settings.PATHS_LOWER_BOUND;
+	}
+
+	public boolean isAcceptingSink() {
+		Node node = findRepresentative();
+		return node.getRejectingPathsSum() == 0 && !node.isRejectable();
+	}
+
+	public boolean isRejectingSink() {
+		Node node = findRepresentative();
+		return node.getAcceptingPathsSum() == 0 && !node.isAcceptable();
 	}
 }

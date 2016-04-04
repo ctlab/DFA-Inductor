@@ -7,12 +7,18 @@ import structures.Node;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
-public class AutomatonBuilder {
+public abstract class AutomatonBuilder {
+
+	private AutomatonBuilder() {}
 
 	public static Automaton build(int[] model, DimacsFileGenerator dfg, APTA apta, int colors) {
-		int vertices = apta.getSize();
-		int[][] x = dfg.getX();
+		Set<Node> redNodes = apta.getRedNodes();
+		Set<Node> notRedNotSinkNodes = apta.getNotRedNotSinkNodes();
+
+		Map<Integer, int[]> x = dfg.getX();
+		Map<Integer, Integer> sinks = dfg.getSinks();
 		Map<Integer, Integer> f = null;
 		if (Settings.NOISY_MODE) {
 			f = dfg.getF();
@@ -20,16 +26,25 @@ public class AutomatonBuilder {
 		Automaton automaton = new Automaton(colors);
 		// map[vertex][color]
 		Map<Integer, Integer> colorsOfNodes = new HashMap<>();
-		for (int i = 0; i < colors; i++) {
-			for (int v = 0; v < vertices; v++) {
-				if (model[x[v][i] - 1] > 0) {
-					colorsOfNodes.put(v, i);
+
+		for (Node node : redNodes) {
+			for (int i = 0; i < colors; i++) {
+				if (model[x.get(node.getNumber())[i] - 1] > 0) {
+					colorsOfNodes.put(node.getNumber(), i);
 				}
 			}
 		}
+		for (Node node : notRedNotSinkNodes) {
+			for (int i = 0; i < colors; i++) {
+				if (model[x.get(node.getNumber())[i]] > 0) {
+					colorsOfNodes.put(node.getNumber(), i);
+				}
+			}
+		}
+
 		if (colorsOfNodes.get(0) != 0) {
 			int changeColor = colorsOfNodes.get(0);
-			for (int v = 0; v < vertices; v++) {
+			for (int v : colorsOfNodes.keySet()) {
 				if (colorsOfNodes.get(v) == changeColor) {
 					colorsOfNodes.put(v, 0);
 				} else if (colorsOfNodes.get(v) == 0) {
@@ -51,8 +66,12 @@ public class AutomatonBuilder {
 			for (Map.Entry<String, Node> entry : apta.getNode(vertex).getChildren()
 					.entrySet()) {
 				String label = entry.getKey();
-				int to = entry.getValue().getNumber();
-				automaton.addTransition(color, colorsOfNodes.get(to), label);
+				if (entry.getValue().getSinkType() == Node.SINK_TYPE.NON_SINK) {
+					int to = entry.getValue().getNumber();
+					if (colorsOfNodes.get(to) != null) {
+						automaton.addTransition(color, colorsOfNodes.get(to), label);
+					}
+				}
 			}
 		}
 		return automaton;
