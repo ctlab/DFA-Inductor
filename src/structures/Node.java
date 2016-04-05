@@ -20,9 +20,7 @@ public class Node {
 	private int acceptingEndings;
 	private int rejectingEndings;
 	private Status status;
-	private Status statusBackup;
-	private int depth;
-	private int depthBackup;
+	private Node backupNodeInformation;
 	private int acceptingPathsSum;
 	private int rejectingPathsSum;
 	private Map<String, Integer> acceptingPaths;
@@ -31,22 +29,16 @@ public class Node {
 	private int color;
 
 	public Node(int number) {
-		init(number, 0);
+		init(number);
 	}
 
-	public Node(int number, int depth) {
-		init(number, depth);
-	}
-
-	public Node(int number, int depth, String label, Node parent) {
-		init(number, depth);
+	public Node(int number, String label, Node parent) {
+		init(number);
 		addParent(label, parent);
 	}
 
-	private void init(int number, int depth) {
+	private void init(int number) {
 		this.number = number;
-		this.depth = depth;
-		this.depthBackup = 0;
 		this.acceptingPathsSum = 0;
 		this.acceptingPaths = new HashMap<>();
 		this.rejectingPathsSum = 0;
@@ -56,35 +48,27 @@ public class Node {
 		this.acceptingEndings = 0;
 		this.rejectingEndings = 0;
 		this.status = Status.COMMON;
-		this.statusBackup = null;
-		this.representative = this;
+		this.representative = null;
 		this.color = -1;
+		this.backupNodeInformation = null;
 	}
 
-	public void backup() {
-		if (statusBackup == null && depthBackup == 0) {
-			statusBackup = status;
-			depthBackup = depth;
+	public void backupAndSetStatus(Node mergedNode) {
+		if (status == Status.COMMON) {
+			status = mergedNode.getStatus();
+			backupNodeInformation = mergedNode;
 		}
 	}
 
-	void resetBackup() {
-		statusBackup = null;
-		depthBackup = 0;
+	public void restoreStatus(Node unmergedNode) {
+		if (backupNodeInformation == unmergedNode) {
+			status = Status.COMMON;
+			backupNodeInformation = null;
+		}
 	}
 
-	public void restore() {
-		if (statusBackup != null && depthBackup != 0) {
-			status = statusBackup;
-			if (status == Status.COMMON) {
-				acceptingEndings = 0;
-				rejectingEndings = 0;
-			}
-			depth = depthBackup;
-
-			statusBackup = null;
-			depthBackup = 0;
-		}
+	public void resetBackup() {
+		backupNodeInformation = null;
 	}
 
 	public int getAcceptingEndings() {
@@ -101,14 +85,6 @@ public class Node {
 
 	public void setRejectingEndings(int rejectingEndings) {
 		this.rejectingEndings = rejectingEndings;
-	}
-
-	public int getDepth() {
-		return depth;
-	}
-
-	public void setDepth(int depth) {
-		this.depth = depth;
 	}
 
 	public int getAcceptingPathsSum() {
@@ -194,16 +170,12 @@ public class Node {
 			if (acceptingEndings == 0) {
 				acceptingEndings = 1;
 			}
-			if (rejectingEndings != 0) {
-				rejectingEndings = 0;
-			}
+			rejectingEndings = 0;
 		} else if (status == Status.REJECTABLE) {
 			if (rejectingEndings == 0) {
 				rejectingEndings = 1;
 			}
-			if (acceptingEndings != 0) {
-				acceptingEndings = 0;
-			}
+			acceptingEndings = 0;
 		}
 	}
 
@@ -241,11 +213,11 @@ public class Node {
 	}
 
 	public Node findRepresentative() {
-		Node rep = this.representative;
-		while (rep != rep.representative) {
-			rep = rep.findRepresentative();
-		};
-		return rep;
+		if (representative == null) {
+			return this;
+		}
+
+		return representative.findRepresentative();
 	}
 
 	public void setRepresentative(Node representative) {

@@ -27,11 +27,10 @@ public abstract class StateMerger {
 		if (score >= 0) {
 			score += scoreAdd(red, blue);
 		}
-		red.backup();
+		red.backupAndSetStatus(blue);
 		if (!red.isAcceptable() && !red.isRejectable()) {
 			red.setStatus(blue.getStatus());
 		}
-		red.setDepth(Math.min(red.getDepth(), blue.getDepth()));
 		for (Map.Entry<String, Integer> e : blue.getAcceptingPaths().entrySet()) {
 			red.addAcceptingPath(e.getKey(), e.getValue());
 		}
@@ -53,8 +52,6 @@ public abstract class StateMerger {
 
 			if (redChild == null) {
 				if (blueChild != null) {
-					blueChild.backup();
-					blueChild.setDepth(red.getDepth());
 					red.addChild(s, blueChild);
 					blueChild.getParents().get(s).remove(blue);
 				}
@@ -80,7 +77,6 @@ public abstract class StateMerger {
 					red.getChildren().remove(s);
 					blueChild.getParents().get(s).add(blue);
 					blueChild.getParents().get(s).remove(red);
-					blueChild.restore();
 				}
 			} else if (redChild != null && blueChild != null) {
 				//redChild = redChild.findRepresentative();
@@ -90,7 +86,7 @@ public abstract class StateMerger {
 			}
 		}
 
-		red.restore();
+		red.restoreStatus(blue);
 		for (Map.Entry<String, Integer> e : blue.getAcceptingPaths().entrySet()) {
 			red.addAcceptingPath(e.getKey(), -e.getValue());
 		}
@@ -100,7 +96,7 @@ public abstract class StateMerger {
 		red.setAcceptingEndings(red.getAcceptingEndings() - blue.getAcceptingEndings());
 		red.setRejectingEndings(red.getRejectingEndings() - blue.getRejectingEndings());
 
-		blue.setRepresentative(blue);
+		blue.setRepresentative(null);
 	}
 
 	public int getScore() {

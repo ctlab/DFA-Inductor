@@ -73,9 +73,8 @@ public class EDSMWorker {
 			}
 			if (pair.score < 0) {
 				if (Settings.EXTEND_FIRST) {
-					if (bestPair.score < 0 && bestPair.score < pair.score || bestPair.score >= 0) {
-						bestPair = pair;
-					}
+					bestPair = pair;
+					break;
 				} else {
 					if (bestPair.score < 0 && bestPair.score < pair.score || bestPair.score == 0) {
 						bestPair = pair;
@@ -98,7 +97,7 @@ public class EDSMWorker {
 	private int mergeAndUndo(Node red, Node blue) {
 		merger.resetScore();
 		merger.merge(red, blue, false);
-		int res = merger.getScore() >= 0 ? merger.getScore() : -blue.getDepth();
+		int res = merger.getScore() >= 0 ? merger.getScore() : -1;
 		merger.undoMerge(red, blue);
 		return res;
 	}
