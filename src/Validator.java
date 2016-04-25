@@ -133,7 +133,7 @@ public class Validator {
 		BFSChecker(Automaton automaton) {
 			this.automaton = automaton;
 			queue = new LinkedList<>();
-			visited = new boolean[automaton.size()];
+			visited = new boolean[automaton.nonSinksAmount()];
 			alphabet = new ArrayList<>(automaton.getStart().getChildren().keySet());
 			Collections.sort(alphabet);
 			expected = 0;
@@ -168,7 +168,7 @@ public class Validator {
 
 		DFSChecker(Automaton automaton) {
 			this.automaton = automaton;
-			visited = new boolean[automaton.size()];
+			visited = new boolean[automaton.nonSinksAmount()];
 			alphabet = new ArrayList<>(automaton.getStart().getChildren().keySet());
 			Collections.sort(alphabet);
 			expected = 0;

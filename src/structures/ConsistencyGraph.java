@@ -100,7 +100,7 @@ public class ConsistencyGraph {
 
 		private int mergeAndUndo(Node red, Node blue) {
 			merger.resetScore();
-			merger.merge(red, blue, false);
+			merger.merge(red, blue);
 			int res = merger.getScore();
 			merger.undoMerge(red, blue);
 			return res;

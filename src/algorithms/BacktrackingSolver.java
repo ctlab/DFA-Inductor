@@ -45,7 +45,9 @@ public class BacktrackingSolver {
 		}
 		Transition tr = frontier.get(0);
 		for (int destination = 0; destination < size; destination++) {
-			if (destination > 1 && automaton.getState(destination - 1).getParents().isEmpty()) {
+			//TODO: WITHOUT PARENTS
+			//if (destination > 1 && automaton.getState(destination - 1).getParents().isEmpty()) {
+			if (destination > 1) {
 				break;
 			}
 			Automaton newAutomaton = new Automaton(automaton);

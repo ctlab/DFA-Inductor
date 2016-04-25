@@ -1,9 +1,6 @@
 import EDSM.EDSMWorker;
 import EDSM.EDSMWorker.EDSMHeuristic;
-import algorithms.AutomatonBuilder;
-import algorithms.BacktrackingSolver;
-import algorithms.DimacsFileGenerator;
-import algorithms.SATSolver;
+import algorithms.*;
 import misc.Settings;
 import org.kohsuke.args4j.Argument;
 import org.kohsuke.args4j.CmdLineException;
@@ -247,7 +244,7 @@ public class Main {
 					logger.info("Searching will be started from size " + minSize + ".");
 				}
 				boolean found = false;
-				for (int colors = minSize; colors <= maxSize && !found; colors++) {
+				for (int colors = minSize + 10; colors <= maxSize && !found; colors++) {
 					logger.info("Try to build automaton with " + colors + " colors");
 					long startTime = 0;
 					try {
@@ -287,7 +284,7 @@ public class Main {
 									logger.warning("Some problem with SATSolver. Shouldn't be here. " +
 											"Exception: " + e.getMessage());
 								}
-								Automaton automaton = AutomatonBuilder.build(model, dfg, apta, colors);
+								Automaton automaton = AutomatonBuilderByY.build(model, dfg, apta, colors);
 								String fullResultFilePath = resultFilePath;
 								if (findAllMode) {
 									fullResultFilePath += fineNumber(curDFA);

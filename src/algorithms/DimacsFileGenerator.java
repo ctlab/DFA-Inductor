@@ -334,6 +334,18 @@ public class DimacsFileGenerator {
 		return x;
 	}
 
+	public Map<String, Integer>[][] getY() {
+		return y;
+	}
+
+	public Map<String, Integer>[][] getY2sink() {
+		return y2sink;
+	}
+
+	public int[] getZ() {
+		return z;
+	}
+
 	public Map<Integer,Integer> getSinks() {
 		return sink;
 	}
@@ -351,8 +363,11 @@ public class DimacsFileGenerator {
 	}
 
 	private void printFixingRedNodesConstraints(Buffer buffer) {
+		apta.getRoot().setColor(holdColor());
 		for (Node red : redNodes) {
-			red.setColor(holdColor());
+			if (red != apta.getRoot()) {
+				red.setColor(holdColor());
+			}
 		}
 		int redColor;
 		int redNumber;
@@ -376,7 +391,7 @@ public class DimacsFileGenerator {
 				buffer.addClause(-z[redColor]);
 			}
 			for (String label : apta.getAlphabet()) {
-				Node target = red.getChild(label);
+				Node target = red.getMergedChild(label);
 				if (target != null) {
 					targetColor = target.getColor();
 					if (redNodes.contains(target)) {
@@ -442,16 +457,23 @@ public class DimacsFileGenerator {
 	// (y_{i,j,a} or !x_{p(v),i} or !x_{v,j})
 	private void printParentRelationIsSet(Buffer buffer) {
 		Node child;
+		int curNum;
+		int childNum;
 		for (Node cur : redNodes) {
-			for (Entry<String, Node> e : cur.getChildren().entrySet()) {
-				child = e.getValue();
+			curNum = cur.getNumber();
+			for (String label : alphabet) {
+				child = cur.getMergedChild(label);
+				if (child == null) {
+					continue;
+				}
+				childNum = child.getNumber();
 				if (child.getSinkType() == Node.SINK_TYPE.NON_SINK) {
 					for (int i = 0; i < colors; i++) {
 						for (int j = 0; j < colors; j++) {
-							buffer.addClause(y[i][j].get(e.getKey()), -x.get(cur.getNumber())[i], -x.get(child.getNumber())[j]);
+							buffer.addClause(y[i][j].get(label), -x.get(curNum)[i], -x.get(childNum)[j]);
 						}
 						for (int j = 0; j < sinks; j++) {
-							buffer.addClause(-y2sink[i][j].get(e.getKey()), -x.get(cur.getNumber())[i]);
+							buffer.addClause(-y2sink[i][j].get(label), -x.get(curNum)[i]);
 						}
 					}
 				}
@@ -459,28 +481,33 @@ public class DimacsFileGenerator {
 		}
 		StringBuilder sb;
 		for (Node cur : notRedNotSinkNodes) {
-			for (Entry<String, Node> e : cur.getChildren().entrySet()) {
-				child = e.getValue();
+			curNum = cur.getNumber();
+			for (String label : alphabet) {
+				child = cur.getMergedChild(label);
+				if (child == null) {
+					continue;
+				}
+				childNum = child.getNumber();
 				for (int i = 0; i < colors; i++) {
 					for (int j = 0; j < colors; j++) {
-						buffer.addClause(y[i][j].get(e.getKey()), -x.get(cur.getNumber())[i], -x.get(child.getNumber())[j]);
+						buffer.addClause(y[i][j].get(label), -x.get(curNum)[i], -x.get(childNum)[j]);
 					}
 					if (sinks > 0) {
 						sb = new StringBuilder();
 						for (int j = 0; j < sinks; j++) {
 							if (child.isParticularSink(j)) {
-								sb.append(y2sink[i][j].get(e.getKey())).append(" ");
+								sb.append(y2sink[i][j].get(label)).append(" ");
 							} else {
-								buffer.addClause(-y2sink[i][j].get(e.getKey()), -x.get(cur.getNumber())[i]);
+								buffer.addClause(-y2sink[i][j].get(label), -x.get(curNum)[i]);
 							}
 						}
-						sb.append(-x.get(cur.getNumber())[i]);
-						sb.append(" ").append(-sink.get(child.getNumber()));
+						sb.append(-x.get(curNum)[i]);
+						sb.append(" ").append(-sink.get(childNum));
 						buffer.addClause(sb);
 					}
 				}
 				if (sinks > 0) {
-					buffer.addClause(-sink.get(cur.getNumber()), sink.get(child.getNumber()));
+					buffer.addClause(-sink.get(curNum), sink.get(childNum));
 				}
 			}
 		}
@@ -541,30 +568,42 @@ public class DimacsFileGenerator {
 	// (!y_{i,j,l(v)} or !x_{p(v),i} or x_{v,i})
 	private void printParentRelationForces(Buffer buffer) {
 		Node child;
+		int curNum;
+		int childNum;
 		for (Node cur : redNodes) {
-			for (Entry<String, Node> e : cur.getChildren().entrySet()) {
-				child = e.getValue();
+			curNum = cur.getNumber();
+			for (String label : alphabet) {
+				child = cur.getMergedChild(label);
+				if (child == null) {
+					continue;
+				}
+				childNum = child.getNumber();
 				if (child.getSinkType() == Node.SINK_TYPE.NON_SINK) {
 					for (int i = 0; i < colors; i++) {
 						for (int j = 0; j < colors; j++) {
-							buffer.addClause(-y[i][j].get(e.getKey()), -x.get(cur.getNumber())[i], x.get(child.getNumber())[j]);
+							buffer.addClause(-y[i][j].get(label), -x.get(curNum)[i], x.get(childNum)[j]);
 						}
 						for (int j = 0; j < sinks; j++) {
-							buffer.addClause(-y2sink[i][j].get(e.getKey()), -x.get(cur.getNumber())[i], sink.get(child.getNumber()));
+							buffer.addClause(-y2sink[i][j].get(label), -x.get(curNum)[i], sink.get(childNum));
 						}
 					}
 				}
 			}
 		}
 		for (Node cur : notRedNotSinkNodes) {
-			for (Entry<String, Node> e : cur.getChildren().entrySet()) {
-				child = e.getValue();
+			curNum = cur.getNumber();
+			for (String label : alphabet) {
+				child = cur.getMergedChild(label);
+				if (child == null) {
+					continue;
+				}
+				childNum = child.getNumber();
 				for (int i = 0; i < colors; i++) {
 					for (int j = 0; j < colors; j++) {
-						buffer.addClause(-y[i][j].get(e.getKey()), -x.get(cur.getNumber())[i], x.get(child.getNumber())[j]);
+						buffer.addClause(-y[i][j].get(label), -x.get(curNum)[i], x.get(childNum)[j]);
 					}
 					for (int j = 0; j < sinks; j++) {
-						buffer.addClause(-y2sink[i][j].get(e.getKey()), -x.get(cur.getNumber())[i], sink.get(child.getNumber()));
+						buffer.addClause(-y2sink[i][j].get(label), -x.get(curNum)[i], sink.get(childNum));
 					}
 				}
 			}

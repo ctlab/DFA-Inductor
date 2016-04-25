@@ -1,10 +1,9 @@
 package EDSM;
 
 import algorithms.StateMerger;
+import misc.Settings;
 import structures.APTA;
 import structures.Node;
-
-import misc.Settings;
 
 import java.util.Map;
 
@@ -30,10 +29,10 @@ public class FanoutEDSMMerger extends StateMerger {
 
 	private boolean checkConsistencyConditions(Node first, Node second) {
 		if (first.getAcceptingPathsSum() >= Settings.PATHS_LOWER_BOUND) {
-			for (Map.Entry<String, Integer> e : first.getAcceptingPaths().entrySet()) {
+			for (Map.Entry<String, Integer> e : second.getAcceptingPaths().entrySet()) {
 				if (e.getValue() >= Settings.PATHS_ON_SYMBOL_LOWER_BOUND) {
-					if (second.getAcceptingPaths().containsKey(e.getKey()) &&
-							second.getAcceptingPaths().get(e.getKey()) == 0) {
+					if (first.getAcceptingPaths().containsKey(e.getKey()) &&
+							first.getAcceptingPaths().get(e.getKey()) == 0) {
 						return false;
 					}
 				}
@@ -44,6 +43,19 @@ public class FanoutEDSMMerger extends StateMerger {
 
 	@Override
 	protected int scoreAdd(Node red, Node blue) {
-		return (red.getAcceptingPathsSum() > 0) && (blue.getAcceptingPathsSum() > 0) ? 1 : 0;
+		int score = 0;
+		for (String label : apta.getAlphabet()) {
+			if (red.getAcceptingPaths().containsKey(label) && blue.getAcceptingPaths().containsKey(label)) {
+				if (red.getAcceptingPaths().get(label) > 0 && blue.getAcceptingPaths().get(label) > 0) {
+					score++;
+				}
+			}
+//			if (red.getRejectingPaths().containsKey(label) && blue.getRejectingPaths().containsKey(label)) {
+//				if (red.getRejectingPaths().get(label) > 0 && blue.getRejectingPaths().get(label) > 0) {
+//					score++;
+//				}
+//			}
+		}
+		return score;
 	}
 }

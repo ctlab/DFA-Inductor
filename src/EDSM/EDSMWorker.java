@@ -28,17 +28,16 @@ public class EDSMWorker {
 
 	public boolean startMerging() {
 		while (true) {
-			if (apta.getSize() < Settings.APTA_BOUND || apta.getRedNodes().size() > Settings.RED_BOUND) {
-				break;
-			}
 			MergePair mergePair = findBestMerge();
 			if (mergePair.score < 0) {
-				apta.promoteBlueToRed(mergePair.blue);
+ 				apta.promoteBlueToRed(mergePair.blue);
 			} else {
+				if (apta.getSize() < Settings.APTA_BOUND || apta.getRedNodes().size() > Settings.RED_BOUND) {
+					break;
+				}
 				merge(mergePair);
 			}
 		}
-		// wrong!
 		return true;
 	}
 
@@ -60,13 +59,14 @@ public class EDSMWorker {
 					pair.update(red, blue, score);
 				}
 			}
+			//TODO: think about >= and >
 			if (pair.score > 0) {
 				if (Settings.EXTEND_FIRST) {
-					if (bestPair.score >= 0 && pair.score > bestPair.score) {
+					if (bestPair.score >= 0 && pair.score >= bestPair.score) {
 						bestPair = pair;
 					}
 				} else {
-					if (pair.score > bestPair.score) {
+					if (pair.score >= bestPair.score) {
 						bestPair = pair;
 					}
 				}
@@ -89,14 +89,14 @@ public class EDSMWorker {
 		Node red = pair.red;
 		Node blue = pair.blue;
 		merger.resetScore();
-		merger.merge(red, blue, true);
+		merger.merge(red.findRepresentative(), blue.findRepresentative());
 		apta.updateRedBlue();
 		return merger.getScore();
 	}
 
 	private int mergeAndUndo(Node red, Node blue) {
 		merger.resetScore();
-		merger.merge(red, blue, false);
+		merger.merge(red, blue);
 		int res = merger.getScore() >= 0 ? merger.getScore() : -1;
 		merger.undoMerge(red, blue);
 		return res;
@@ -126,7 +126,8 @@ public class EDSMWorker {
 		void update(Node red, Node blue, double score) {
 			this.red = red;
 			this.blue = blue;
-			this.score = score;
+			//TODO: refactor
+			this.score = score == 0 ? 0.0001 : score;
 		}
 	}
 }

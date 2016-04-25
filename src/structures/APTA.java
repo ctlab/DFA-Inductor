@@ -1,12 +1,12 @@
 package structures;
 
+import structures.Node.SINK_TYPE;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.*;
-
-import structures.Node.SINK_TYPE;
 
 public class APTA {
 
@@ -32,15 +32,36 @@ public class APTA {
 		vlset = new HashMap<>();
 		alphabet = new HashSet<>();
 		size = 0;
-		redNodes = new HashSet<>();
-		notRedNodes = new HashSet<>();
-		blueNodes = new HashSet<>();
+		redNodes = new TreeSet<>(new NodesComparator());
+		notRedNodes = new TreeSet<>(new NodesComparator());
+		blueNodes = new TreeSet<>(new NodesComparator());
 
-		root = new Node(size, 1);
+		root = new Node(size);
 		indexesOfNodes.put(size++, root);
 		initRedBlue();
 	}
 
+	class NodesComparator implements Comparator<Node> {
+
+		@Override
+		public int compare(Node a, Node b) {
+			int aW = a.getAcceptingPathsSum() + a.getRejectingPathsSum();
+			int bW = b.getAcceptingPathsSum() + b.getRejectingPathsSum();
+
+			if (aW > bW) {
+				return -1;
+			} else if (aW < bW) {
+				return 1;
+			} else {
+				if (a.getNumber() < b.getNumber()) {
+					return -1;
+				} else if (a.getNumber() > b.getNumber()) {
+					return 1;
+				}
+			}
+			return 0;
+		}
+	}
 
 	public APTA(APTA other) {
 		this.size = other.size;
@@ -51,9 +72,9 @@ public class APTA {
 		acceptableNodes = new HashSet<>(other.getRejectableNodes());
 		rejectableNodes = new HashSet<>(other.getRejectableNodes());
 		vlset = new HashMap<>(other.vlset);
-		redNodes = new HashSet<>();
-		notRedNodes = new HashSet<>();
-		blueNodes = new HashSet<>();
+		redNodes = new TreeSet<>(new NodesComparator());
+		notRedNodes = new TreeSet<>(new NodesComparator());
+		blueNodes = new TreeSet<>(new NodesComparator());
 
 		root = new Node(0);
 		Node curNode = root;
@@ -68,7 +89,7 @@ public class APTA {
 		for (Map.Entry<String, Node> e: parallel.getChildren().entrySet()) {
 			label = e.getKey();
 			child = e.getValue();
-			newChild = new Node(child.getNumber(), child.getDepth());
+			newChild = new Node(child.getNumber());
 			current.addChild(label, newChild);
 
 			newChild.setAcceptingEndings(child.getAcceptingEndings());
@@ -100,28 +121,25 @@ public class APTA {
 			indexesOfNodes = new HashMap<>();
 			vlset = new HashMap<>();
 			alphabet = new HashSet<>();
-			redNodes = new HashSet<>();
-			notRedNodes = new HashSet<>();
-			blueNodes = new HashSet<>();
+			redNodes = new TreeSet<>(new NodesComparator());
+			notRedNodes = new TreeSet<>(new NodesComparator());
+			blueNodes = new TreeSet<>(new NodesComparator());
 
 			int lines = nextInt(br);
 			words = lines;
 			int alphaSize = nextInt(br);
 			this.alphaSize = alphaSize;
-			root = new Node(size, 1);
+			root = new Node(size);
 			indexesOfNodes.put(size++, root);
 
 			Node currentNode;
 			Node newNode;
 			String label;
-			int depth;
 			for (int line = 0; line < lines; line++) {
 				currentNode = root;
-				depth = 1;
 				int status = nextInt(br);
 				int len = nextInt(br);
 				for (int i = 0; i < len; i++) {
-					depth++;
 					label = nextToken(br);
 					if (i < len) {
 						if (status == 1) {
@@ -138,7 +156,7 @@ public class APTA {
 						currentNode = currentNode.getChildren().get(label);
 					} else {
 						vlset.get(label).add(currentNode.getNumber());
-						newNode = new Node(size, depth, label, currentNode);
+						newNode = new Node(size, label, currentNode);
 						indexesOfNodes.put(size++, newNode);
 						currentNode.addChild(label, newNode);
 						currentNode = newNode;
@@ -190,9 +208,10 @@ public class APTA {
 	}
 
 	private void addSubtree(Set<Node> states, Node node) {
-		states.add(node);
-		for (Node child : node.getChildren().values()) {
-			addSubtree(states, child);
+		if (states.add(node)) {
+			for (Node child : node.getChildren().values()) {
+				addSubtree(states, child);
+			}
 		}
 	}
 
@@ -227,10 +246,17 @@ public class APTA {
 	}
 
 	public void updateRedBlue() {
+		Set<Node> newRed = new TreeSet<>(new NodesComparator());
+		for (Node red : redNodes) {
+			newRed.add(red.findRepresentative());
+		}
+		redNodes = newRed;
 		blueNodes.clear();
+		Node candidateBlueNode;
 		for (Node redNode : redNodes) {
-			for (Node candidateBlueNode : redNode.getChildren().values()) {
-				if (!redNodes.contains(candidateBlueNode)) {
+			for (String label : alphabet) {
+				candidateBlueNode = redNode.getMergedChild(label);
+				if (candidateBlueNode != null && !redNodes.contains(candidateBlueNode)) {
 					blueNodes.add(candidateBlueNode);
 				}
 			}
@@ -241,8 +267,12 @@ public class APTA {
 		blueNodes.remove(blue);
 		notRedNodes.remove(blue);
 		redNodes.add(blue);
-		for (Node newBlue : blue.getChildren().values()) {
-			blueNodes.add(newBlue);
+		Node newBlue;
+		for (String label : alphabet) {
+			newBlue = blue.getMergedChild(label);
+			if (newBlue != null) {
+				blueNodes.add(newBlue);
+			}
 		}
 	}
 
@@ -339,13 +369,16 @@ public class APTA {
 			}
 			indexesOfNodes.remove(size);
 
-			for (Map.Entry<String, Set<Node>> e : blue.getParents().entrySet()) {
-				String label = e.getKey();
-				for (Node parent : e.getValue()) {
-					if (indexesOfNodes.get(parent.getNumber()) == parent) {
-						red.addParent(label, parent);
-					}
+			String label;
+			Node child;
+			for (Iterator<Map.Entry<String, Node>> it = blue.getChildren().entrySet().iterator(); it.hasNext();) {
+				Map.Entry<String, Node> e = it.next();
+				label = e.getKey();
+				child = e.getValue();
+				if (red.getChild(label) == null) {
+					red.addChild(label, child);
 				}
+				it.remove();
 			}
 		}
 	}

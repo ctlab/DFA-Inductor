@@ -9,7 +9,7 @@ public abstract class StateMerger {
 
 	protected int score;
 	protected List<String> alphabet;
-	private APTA apta;
+	protected APTA apta;
 
 	public StateMerger(APTA apta) {
 		this.apta = apta;
@@ -20,10 +20,11 @@ public abstract class StateMerger {
 	protected abstract boolean isConsistent(Node red, Node blue);
 	protected abstract int scoreAdd(Node red, Node blue);
 
-	public boolean merge(Node red, Node blue, boolean finalMerge) {
+	public void merge(Node red, Node blue) {
 		if (!isConsistent(red, blue)) {
 			score = -1;
 		}
+
 		if (score >= 0) {
 			score += scoreAdd(red, blue);
 		}
@@ -40,11 +41,7 @@ public abstract class StateMerger {
 		red.setAcceptingEndings(red.getAcceptingEndings() + blue.getAcceptingEndings());
 		red.setRejectingEndings(red.getRejectingEndings() + blue.getRejectingEndings());
 
-		if(finalMerge) {
-			apta.update(red, blue);
-		} else {
-			blue.setRepresentative(red);
-		}
+		blue.setRepresentative(red);
 
 		for (String s : alphabet) {
 			Node redChild = red.getChild(s);
@@ -53,17 +50,16 @@ public abstract class StateMerger {
 			if (redChild == null) {
 				if (blueChild != null) {
 					red.addChild(s, blueChild);
-					blueChild.getParents().get(s).remove(blue);
 				}
-			} else if (redChild != blueChild && blueChild != null) {
+			} else if (blueChild != null) {
 				redChild = redChild.findRepresentative();
 				blueChild = blueChild.findRepresentative();
-				if (!merge(redChild, blueChild, finalMerge)) {
-					return false;
+				if (redChild != blueChild) {
+					blueChild.saveBackReference(s, blue);
+					merge(redChild, blueChild);
 				}
 			}
 		}
-		return true;
 	}
 
 	public void undoMerge(Node red, Node blue) {
@@ -75,14 +71,14 @@ public abstract class StateMerger {
 			if (redChild == blueChild) {
 				if (blueChild != null) {
 					red.getChildren().remove(s);
-					blueChild.getParents().get(s).add(blue);
-					blueChild.getParents().get(s).remove(red);
 				}
 			} else if (redChild != null && blueChild != null) {
-				//redChild = redChild.findRepresentative();
-				//blueChild = blueChild.findRepresentative();
-				redChild = blueChild.findRepresentative();
-				undoMerge(redChild, blueChild);
+				blueChild = blueChild.findUntilBackReference(s, blue);
+				redChild = blueChild.getRepresentative();
+				if (redChild != blueChild) {
+					undoMerge(redChild, blueChild);
+				}
+				blueChild.removeBackReference(s);
 			}
 		}
 

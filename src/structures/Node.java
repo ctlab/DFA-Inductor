@@ -7,7 +7,7 @@ import java.util.*;
 public class Node {
 
 	public enum Status {
-		ACCEPTABLE, COMMON, REJECTABLE
+		ACCEPTABLE, COMMON, REJECTABLE, SINK
 	}
 
 	public enum SINK_TYPE {
@@ -16,7 +16,6 @@ public class Node {
 
 	private int number;
 	private Map<String, Node> children;
-	private Map<String, Set<Node>> parents;
 	private int acceptingEndings;
 	private int rejectingEndings;
 	private Status status;
@@ -27,6 +26,7 @@ public class Node {
 	private Map<String, Integer> rejectingPaths;
 	private Node representative;
 	private int color;
+	private Map<String, Node> backReference;
 
 	public Node(int number) {
 		init(number);
@@ -34,7 +34,7 @@ public class Node {
 
 	public Node(int number, String label, Node parent) {
 		init(number);
-		addParent(label, parent);
+		parent.addChild(label, this);
 	}
 
 	private void init(int number) {
@@ -44,13 +44,13 @@ public class Node {
 		this.rejectingPathsSum = 0;
 		this.rejectingPaths = new HashMap<>();
 		this.children = new HashMap<>();
-		this.parents = new HashMap<>();
 		this.acceptingEndings = 0;
 		this.rejectingEndings = 0;
 		this.status = Status.COMMON;
 		this.representative = null;
 		this.color = -1;
 		this.backupNodeInformation = null;
+		this.backReference = new HashMap<>();
 	}
 
 	public void backupAndSetStatus(Node mergedNode) {
@@ -179,49 +179,54 @@ public class Node {
 		}
 	}
 
-	public Map<String, Set<Node>> getParents() {
-		return parents;
-	}
-
-	public Set<Node> getParentByLabel(String s) {
-		return parents.containsKey(s) ? parents.get(s) : null;
-	}
-
 	public Map<String, Node> getChildren() {
 		return children;
 	}
 
+	public Node getMergedChild(String s) {
+		Node rep = findRepresentative();
+		return rep.children.containsKey(s) ? rep.children.get(s).findRepresentative() : null;
+	}
+
 	public Node getChild(String s) {
-		return children.containsKey(s) ? children.get(s) : null;
+		return this.children.get(s);
 	}
 
 	public void addChild(String s, Node child) {
 		children.put(s, child);
-		if (!child.getParents().containsKey(s) || !child.getParents().get(s).contains(this)) {
-			child.addParent(s, this);
-		}
-	}
-
-	public void addParent(String s, Node parent) {
-		if (!parents.containsKey(s)) {
-			parents.put(s, new HashSet<Node>());
-		}
-		parents.get(s).add(parent);
-		if (parent.getChild(s) == null || parent.getChild(s) != this) {
-			parent.addChild(s, this);
-		}
 	}
 
 	public Node findRepresentative() {
 		if (representative == null) {
 			return this;
 		}
-
 		return representative.findRepresentative();
 	}
 
 	public void setRepresentative(Node representative) {
 		this.representative = representative;
+	}
+
+	public Node getRepresentative() {
+		return representative;
+	}
+
+	public void saveBackReference(String label, Node parent) {
+		this.backReference.put(label, parent);
+	}
+
+	public void removeBackReference(String label) {
+		this.backReference.remove(label);
+	}
+
+	public Node findUntilBackReference(String label, Node parent) {
+		if (backReference.containsKey(label)) {
+			return this;
+		}
+		if (representative == null) {
+			return null;
+		}
+		return representative.findUntilBackReference(label, parent);
 	}
 
 	public int getColor() {
@@ -284,6 +289,29 @@ public class Node {
 				return false;
 		}
 		return false;
+	}
+
+	public int getSinkNumber() {
+		int sinkMode = Settings.SINKS_MODE;
+		if (sinkMode == 0) {
+			return -1;
+		}
+		if (isRejectingSink()) {
+			return 0;
+		}
+		if (isLowInformationalSink()) {
+			if (sinkMode == 3) {
+				return 0;
+			} else if (sinkMode == 4){
+				return 1;
+			} else {
+				return 2;
+			}
+		}
+		if (isAcceptingSink()) {
+			return 1;
+		}
+		return -1;
 	}
 
 	public boolean isLowInformationalSink() {

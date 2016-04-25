@@ -1,5 +1,7 @@
 package structures;
 
+import misc.Settings;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -12,9 +14,11 @@ import java.util.regex.Pattern;
 public class Automaton {
 	private Node start;
 	private List<Node> states;
+	private List<Node> sinks;
 
+	//TODO: refactor
 	public Automaton(Automaton automaton) {
-		this(automaton.size());
+		this(automaton.nonSinksAmount(), automaton.sinksAmount());
 
 		for (int i = 0; i < automaton.getStates().size(); i++) {
 			Node thisNode = this.states.get(i);
@@ -23,16 +27,13 @@ public class Automaton {
 			for (Map.Entry<String, Node> entry : otherNode.getChildren().entrySet()) {
 				thisNode.addChild(entry.getKey(), this.states.get(entry.getValue().getNumber()));
 			}
-			for (Map.Entry<String, Set<Node>> entry : otherNode.getParents().entrySet()) {
-				for (Node parent : entry.getValue())
-				thisNode.addParent(entry.getKey(), this.states.get(parent.getNumber()));
-			}
 		}
 	}
 
 	public Automaton(int size) {
 		int cur = 0;
 		this.start = new Node(cur++);
+		this.sinks = new ArrayList<>();
 		this.states = new ArrayList<>();
 		this.states.add(this.start);
 
@@ -41,14 +42,25 @@ public class Automaton {
 		}
 	}
 
+	public Automaton(int size, int sinks) {
+		this(size);
+
+		int cur = nonSinksAmount();
+		for (int i = 0; i < sinks; i++) {
+			this.sinks.add(new Node(cur++));
+		}
+	}
+
 	public Automaton(File file) throws IOException {
 		this.start = new Node(0);
 		this.states = new ArrayList<>();
 		this.states.add(this.start);
+		this.sinks = new ArrayList<>();
 
 		try (BufferedReader automatonBR = new BufferedReader(new FileReader(file))) {
 			Pattern transitionPattern = Pattern.compile("\\s+(\\d+) -> (\\d+) \\[label = \\\"([a-zA-Z0-9-_]+)\\\"\\];");
 			Pattern acceptingPattern = Pattern.compile("\\s+(\\d+) \\[peripheries=2\\]");
+			Pattern sinkPattern = Pattern.compile("\\s+(\\d+) \\[shape = square\\];");
 
 			String line;
 			Matcher matcher;
@@ -58,10 +70,21 @@ public class Automaton {
 							matcher.group(3));
 				} else if ((matcher = acceptingPattern.matcher(line)).matches()) {
 					getState(Integer.parseInt(matcher.group(1))).setStatus(Node.Status.ACCEPTABLE);
+				} else if ((matcher = sinkPattern.matcher(line)).matches()) {
+					getState(Integer.parseInt(matcher.group(1))).setStatus(Node.Status.SINK);
+				}
+			}
+			Iterator<Node> iter = states.iterator();
+			Node cur;
+			while(iter.hasNext()) {
+				cur = iter.next();
+				if (cur.getStatus() == Node.Status.SINK) {
+					sinks.add(cur);
+					iter.remove();
 				}
 			}
 			for (Node node : states) {
-				if (!node.isAcceptable()) {
+				if (node.getStatus() == Node.Status.COMMON) {
 					node.setStatus(Node.Status.REJECTABLE);
 				}
 			}
@@ -80,7 +103,23 @@ public class Automaton {
 		return states;
 	}
 
+	public Node getSink(int i) {
+		return sinks.get(i);
+	}
+
+	public List<Node> getSinks() {
+		return sinks;
+	}
+
 	public int size() {
+		return states.size();
+	}
+
+	public int sinksAmount() {
+		return sinks.size();
+	}
+
+	public int nonSinksAmount() {
 		return states.size();
 	}
 
@@ -95,13 +134,35 @@ public class Automaton {
 		Node toNode = states.get(to);
 
 		fromNode.addChild(label, toNode);
-		toNode.addParent(label, fromNode);
+	}
+
+	public void addTransition2Sink(int from, int to, String label) {
+		if (from >= states.size()) {
+			addState(from);
+		}
+		if (to >= sinks.size()) {
+			throw new IllegalArgumentException("There are no so much sinks");
+		}
+		Node fromNode = states.get(from);
+		Node toNode = sinks.get(to);
+
+		fromNode.addChild(label, toNode);
 	}
 
 	public Node.Status proceedWord(List<String> word) {
 		Node curNode = start;
+		Node child;
 		for (String label : word) {
-			curNode = curNode.getChild(label);
+			child = curNode.getChild(label);
+			if (child.getStatus() == Node.Status.SINK) {
+				if (Settings.SINKS_MODE == 2 || Settings.SINKS_MODE == 5) {
+					if (child == sinks.get(1)) {
+						return Node.Status.ACCEPTABLE;
+					}
+				}
+				return Node.Status.REJECTABLE;
+			}
+			curNode = child;
 		}
 		return curNode.getStatus();
 	}
@@ -128,6 +189,11 @@ public class Automaton {
 				s.append("\"];\n");
 			}
 		}
+		for (Node sink : sinks) {
+			s.append("    ");
+			s.append(sink.getNumber());
+			s.append(" [shape = square];\n");
+		}
 		s.append("}");
 
 		return s.toString();
@@ -135,7 +201,7 @@ public class Automaton {
 
 	private String enumerate() {
 		Queue<Node> queue = new LinkedList<>();
-		boolean[] visited = new boolean[this.size()];
+		boolean[] visited = new boolean[this.nonSinksAmount()];
 		List<String> alphabet = new ArrayList<>(this.getStart().getChildren().keySet());
 		Collections.sort(alphabet);
 		int cur_num = 0;
