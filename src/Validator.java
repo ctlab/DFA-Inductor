@@ -80,10 +80,12 @@ public class Validator {
 					List<String> word = new ArrayList<>(Arrays.asList(wordStr.split("\\s+")));
 					assert word.size() == Integer.parseInt(word.get(1));
 					Node.Status status = automaton.proceedWord(word.subList(2, word.size()));
-					if (status == Node.Status.ACCEPTABLE && word.get(0).equals("1")) {
+					if ((status == Node.Status.ACCEPTABLE || status == Node.Status.ACC_SINK)
+							&& word.get(0).equals("1")) {
 						continue;
 					}
-					if (status == Node.Status.REJECTABLE && word.get(0).equals("0")) {
+					if ((status == Node.Status.REJECTABLE || status == Node.Status.REJ_SINK)
+							&& word.get(0).equals("0")) {
 						continue;
 					}
 					mistakes++;

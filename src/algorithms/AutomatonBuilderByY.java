@@ -47,7 +47,12 @@ public abstract class AutomatonBuilderByY {
         }
 
         for (int i = 0; i < Settings.getSinksAmount(); i++) {
-            automaton.getSink(i).setStatus(Node.Status.SINK);
+            if (Settings.SINKS_MODE == 2 || Settings.SINKS_MODE == 5) {
+                if (i == 1) {
+                    automaton.getSink(i).setStatus(Node.Status.ACC_SINK);
+                }
+            }
+            automaton.getSink(i).setStatus(Node.Status.REJ_SINK);
         }
 
         return automaton;

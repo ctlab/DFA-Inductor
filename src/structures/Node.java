@@ -7,7 +7,7 @@ import java.util.*;
 public class Node {
 
 	public enum Status {
-		ACCEPTABLE, COMMON, REJECTABLE, SINK
+		ACCEPTABLE, COMMON, REJECTABLE, ACC_SINK, REJ_SINK
 	}
 
 	public enum SINK_TYPE {

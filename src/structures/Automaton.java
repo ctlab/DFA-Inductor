@@ -1,7 +1,5 @@
 package structures;
 
-import misc.Settings;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -58,9 +56,10 @@ public class Automaton {
 		this.sinks = new ArrayList<>();
 
 		try (BufferedReader automatonBR = new BufferedReader(new FileReader(file))) {
-			Pattern transitionPattern = Pattern.compile("\\s+(\\d+) -> (\\d+) \\[label = \\\"([a-zA-Z0-9-_]+)\\\"\\];");
-			Pattern acceptingPattern = Pattern.compile("\\s+(\\d+) \\[peripheries=2\\]");
-			Pattern sinkPattern = Pattern.compile("\\s+(\\d+) \\[shape = square\\];");
+			Pattern transitionPattern = Pattern.compile("\\s+(\\d+) -> (\\d+) \\[label = \\\"([a-zA-Z0-9-_]+)\\\"\\]\\s*;");
+			Pattern acceptingPattern = Pattern.compile("\\s+(\\d+) \\[peripheries=2\\]\\s*");
+			Pattern sinkPattern = Pattern.compile("\\s+(\\d+) \\[shape = square\\];\\s*");
+			Pattern acceptingSinkPattern = Pattern.compile("\\s+(\\d+) \\[peripheries=2\\] \\[shape = square\\];\\s*");
 
 			String line;
 			Matcher matcher;
@@ -70,15 +69,17 @@ public class Automaton {
 							matcher.group(3));
 				} else if ((matcher = acceptingPattern.matcher(line)).matches()) {
 					getState(Integer.parseInt(matcher.group(1))).setStatus(Node.Status.ACCEPTABLE);
+				} else if ((matcher = acceptingSinkPattern.matcher(line)).matches()) {
+					getState(Integer.parseInt(matcher.group(1))).setStatus(Node.Status.ACC_SINK);
 				} else if ((matcher = sinkPattern.matcher(line)).matches()) {
-					getState(Integer.parseInt(matcher.group(1))).setStatus(Node.Status.SINK);
+					getState(Integer.parseInt(matcher.group(1))).setStatus(Node.Status.REJ_SINK);
 				}
 			}
 			Iterator<Node> iter = states.iterator();
 			Node cur;
 			while(iter.hasNext()) {
 				cur = iter.next();
-				if (cur.getStatus() == Node.Status.SINK) {
+				if (cur.getStatus() == Node.Status.ACC_SINK || cur.getStatus() == Node.Status.REJ_SINK) {
 					sinks.add(cur);
 					iter.remove();
 				}
@@ -154,12 +155,9 @@ public class Automaton {
 		Node child;
 		for (String label : word) {
 			child = curNode.getChild(label);
-			if (child.getStatus() == Node.Status.SINK) {
-				if (Settings.SINKS_MODE == 2 || Settings.SINKS_MODE == 5) {
-					if (child == sinks.get(1)) {
-						return Node.Status.ACCEPTABLE;
-					}
-				}
+		if (child.getStatus() == Node.Status.ACC_SINK) {
+				return Node.Status.ACCEPTABLE;
+			} else if (child.getStatus() == Node.Status.REJ_SINK) {
 				return Node.Status.REJECTABLE;
 			}
 			curNode = child;
@@ -192,6 +190,9 @@ public class Automaton {
 		for (Node sink : sinks) {
 			s.append("    ");
 			s.append(sink.getNumber());
+			if (sink.getSinkType() == Node.SINK_TYPE.ACCEPTING_SINK) {
+				s.append(" [peripheries=2]");
+			}
 			s.append(" [shape = square];\n");
 		}
 		s.append("}");
