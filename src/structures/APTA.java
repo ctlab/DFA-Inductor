@@ -198,7 +198,7 @@ public class APTA {
 	}
 
 	public Set<Node> getNotRedNotSinkNodes() {
-		Set<Node> notRedNotSinkStates = new HashSet<>();
+		Set<Node> notRedNotSinkStates = new TreeSet<>(new NodesComparator());
 		for (Node node : blueNodes) {
 			if (node.getSinkType() == SINK_TYPE.NON_SINK) {
 				addSubtree(notRedNotSinkStates, node);

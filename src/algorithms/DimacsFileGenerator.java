@@ -71,8 +71,8 @@ public class DimacsFileGenerator {
 	public DimacsFileGenerator(APTA apta, ConsistencyGraph cg, int colors) throws IOException {
 		this.apta = apta;
 		this.cg = cg;
-		this.colors = colors;
 		this.sinks = Settings.getSinksAmount();
+		this.colors = colors;
 		this.SB = getSBStrategyByNum(Settings.SB_STRATEGY);
 		this.noisyP = Settings.ERRORS_PERCENT;
 		this.maxVar = 1;

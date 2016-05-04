@@ -190,7 +190,7 @@ public class Automaton {
 		for (Node sink : sinks) {
 			s.append("    ");
 			s.append(sink.getNumber());
-			if (sink.getSinkType() == Node.SINK_TYPE.ACCEPTING_SINK) {
+			if (sink.getStatus() == Node.Status.ACC_SINK) {
 				s.append(" [peripheries=2]");
 			}
 			s.append(" [shape = square];\n");

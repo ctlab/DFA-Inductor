@@ -50,6 +50,7 @@ public abstract class AutomatonBuilderByY {
             if (Settings.SINKS_MODE == 2 || Settings.SINKS_MODE == 5) {
                 if (i == 1) {
                     automaton.getSink(i).setStatus(Node.Status.ACC_SINK);
+                    continue;
                 }
             }
             automaton.getSink(i).setStatus(Node.Status.REJ_SINK);

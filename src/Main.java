@@ -98,7 +98,11 @@ public class Main {
 	private int pathsOnSymbolLowerBound = 10;
 
 	@Option(name = "--runs", usage = "number of EDSM runs", metaVar = "<runs>")
-	private int runs = 100;
+	private int runs = 1;
+
+	@Option(name = "--offset", usage = "number of additional states of desired DFA which " +
+			"is added to the red core size; if set to 0 (default) then iterative algorithm used")
+	private int offset = 0;
 
 	@Option(name = "--heuristic", aliases = {"-h"}, usage = "heuristic function for EDSM: 0 - no EDSM," +
 			"1 - number of same status merges, 2 - overlap in fanout")
@@ -168,6 +172,7 @@ public class Main {
 				pathsLowerBound,
 				pathsOnSymbolLowerBound,
 				runs,
+				offset,
 				heuristic,
 				aptaBound,
 				redBound,

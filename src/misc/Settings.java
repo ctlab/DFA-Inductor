@@ -32,6 +32,7 @@ public final class Settings {
 	public static int PATHS_LOWER_BOUND;
 	public static int PATHS_ON_SYMBOL_LOWER_BOUND;
 	public static int RUNS;
+	public static int OFFSET;
 	public static int HEURISTIC;
 	public static int APTA_BOUND;
 	public static int RED_BOUND;
@@ -63,6 +64,7 @@ public final class Settings {
 			int PATHS_LOWER_BOUND,
 			int PATHS_ON_SYMBOL_LOWER_BOUND,
 			int RUNS,
+			int OFFSET,
 			int HEURISTIC,
 			int APTA_BOUND,
 			int RED_BOUND,
@@ -90,6 +92,7 @@ public final class Settings {
 		Settings.PATHS_LOWER_BOUND = PATHS_LOWER_BOUND;
 		Settings.PATHS_ON_SYMBOL_LOWER_BOUND = PATHS_ON_SYMBOL_LOWER_BOUND;
 		Settings.RUNS = RUNS;
+		Settings.OFFSET = OFFSET;
 		Settings.HEURISTIC = HEURISTIC;
 		Settings.APTA_BOUND = APTA_BOUND;
 		Settings.RED_BOUND = RED_BOUND;
