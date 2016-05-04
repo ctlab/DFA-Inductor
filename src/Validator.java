@@ -34,6 +34,10 @@ public class Validator {
 	@Option(name = "--dfs", usage = "check for DFS-enumeration", forbids = {"--bfs"}, metaVar = "<dfs>")
 	private boolean dfsMode;
 
+	@Option(name = "--coresize", aliases = {"-c"}, usage = "the size of the red core for bfs|dfs checking",
+	metaVar = "<red core size>")
+	private int coreSize = 1;
+
 	private static Logger logger = Logger.getLogger("Logger");
 
 	private void launch(String... args) {
@@ -105,7 +109,7 @@ public class Validator {
 			if (correct) {
 				if (bfsMode) {
 					logger.info("Checking for BFS-enumeration started.");
-					if (new BFSChecker(automaton).check()) {
+					if (new BFSChecker(automaton).check(coreSize)) {
 						logger.info("The automaton is BFS-enumerated! Congrats :)");
 					} else {
 						logger.warning("The automaton is not BFS-enumerated! Too sad :(");
@@ -141,9 +145,27 @@ public class Validator {
 			expected = 0;
 		}
 
-		boolean check() {
-			queue.add(automaton.getStart());
-			visited[automaton.getStart().getNumber()] = true;
+		boolean check(int coreSize) {
+			expected = coreSize;
+			for (int i = 0; i < expected; i++) {
+				visited[i] = true;
+			}
+			Set<Integer> used = new TreeSet<>();
+			Node child;
+			for (String label : alphabet) {
+				for (int i = 0; i < coreSize; i++) {
+					child = automaton.getState(i).getChild(label);
+					if (child != null && child.getNumber() >= expected && !queue.contains(child) &&
+							child.getStatus() != Node.Status.ACC_SINK && child.getStatus() != Node.Status.REJ_SINK) {
+						used.add(child.getNumber());
+					}
+				}
+				for (int i : used) {
+					queue.add(automaton.getState(i));
+					visited[i] = true;
+				}
+				used.clear();
+			}
 			Node cur;
 			while (!queue.isEmpty()) {
 				cur = queue.remove();
@@ -151,7 +173,8 @@ public class Validator {
 					return false;
 				}
 				for (String label : alphabet) {
-					Node child = cur.getChild(label);
+					child = cur.getChild(label);
+					if (child.getStatus() != Node.Status.ACC_SINK && child.getStatus() != Node.Status.REJ_SINK)
 					if (!visited[child.getNumber()]) {
 						visited[child.getNumber()] = true;
 						queue.add(child);
