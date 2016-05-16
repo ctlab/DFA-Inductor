@@ -68,8 +68,9 @@ public class APTA {
 		this.words = other.words;
 		this.alphaSize = other.alphaSize;
 
+		indexesOfNodes = new HashMap<>();
 		alphabet = new HashSet<>(other.getAlphabet());
-		acceptableNodes = new HashSet<>(other.getRejectableNodes());
+		acceptableNodes = new HashSet<>(other.getAcceptableNodes());
 		rejectableNodes = new HashSet<>(other.getRejectableNodes());
 		vlset = new HashMap<>(other.vlset);
 		redNodes = new TreeSet<>(new NodesComparator());
@@ -77,6 +78,17 @@ public class APTA {
 		blueNodes = new TreeSet<>(new NodesComparator());
 
 		root = new Node(0);
+
+		root.setAcceptingEndings(other.root.getAcceptingEndings());
+		root.setRejectingEndings(other.root.getRejectingEndings());
+		root.setAcceptingPathsSum(other.root.getAcceptingPathsSum());
+		root.setAcceptingPaths(other.root.getAcceptingPaths());
+		root.setRejectingPathsSum(other.root.getRejectingPathsSum());
+		root.setRejectingPaths(other.root.getRejectingPaths());
+		root.setStatus(other.root.getStatus());
+		redNodes.add(root);
+		indexesOfNodes.put(0, root);
+
 		Node curNode = root;
 		copyNodes(curNode, other.getRoot(), other);
 	}
