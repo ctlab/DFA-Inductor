@@ -25,7 +25,7 @@ public final class Settings {
 	public static int MAXIMUM_SIZE;
 	public static int MINIMUM_SIZE;
 	public static int SB_STRATEGY;
-	public static int TIMEOUT;
+	public static long TIMEOUT;
 	public static int ERRORS_PERCENT;
 	public static int FIND_K;
 	public static int AT_MOST_ONE_OPTION;
@@ -57,7 +57,7 @@ public final class Settings {
 			int MAXIMUM_SIZE,
 			int MINIMUM_SIZE,
 			int SB_STRATEGY,
-			int TIMEOUT,
+			long TIMEOUT,
 			int ERRORS_PERCENT,
 			int FIND_K,
 			int AT_MOST_ONE_OPTION,

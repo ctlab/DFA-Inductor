@@ -72,56 +72,47 @@ public class APTA {
 		alphabet = new HashSet<>(other.getAlphabet());
 		acceptableNodes = new HashSet<>(other.getAcceptableNodes());
 		rejectableNodes = new HashSet<>(other.getRejectableNodes());
-		vlset = new HashMap<>(other.vlset);
+		vlset = new HashMap<>();
 		redNodes = new TreeSet<>(new NodesComparator());
 		notRedNodes = new TreeSet<>(new NodesComparator());
 		blueNodes = new TreeSet<>(new NodesComparator());
 
+		for (String s : other.vlset.keySet()) {
+			vlset.put(s, new HashSet<>(other.vlset.get(s)));
+		}
+
 		root = new Node(0);
-
-		root.setAcceptingEndings(other.root.getAcceptingEndings());
-		root.setRejectingEndings(other.root.getRejectingEndings());
-		root.setAcceptingPathsSum(other.root.getAcceptingPathsSum());
-		root.setAcceptingPaths(other.root.getAcceptingPaths());
-		root.setRejectingPathsSum(other.root.getRejectingPathsSum());
-		root.setRejectingPaths(other.root.getRejectingPaths());
-		root.setStatus(other.root.getStatus());
-		redNodes.add(root);
-		indexesOfNodes.put(0, root);
-
-		Node curNode = root;
-		copyNodes(curNode, other.getRoot(), other);
+		copyNodes(root, other.getRoot(), other);
 	}
 
 	private void copyNodes(Node current, Node parallel, APTA other) {
-		String label;
+		current.setAcceptingEndings(parallel.getAcceptingEndings());
+		current.setRejectingEndings(parallel.getRejectingEndings());
+		current.setAcceptingPathsSum(parallel.getAcceptingPathsSum());
+		current.setAcceptingPaths(parallel.getAcceptingPaths());
+		current.setRejectingPathsSum(parallel.getRejectingPathsSum());
+		current.setRejectingPaths(parallel.getRejectingPaths());
+		current.setStatus(parallel.getStatus());
+		indexesOfNodes.put(parallel.getNumber(), current);
+		if (other.getRedNodes().contains(parallel)) {
+			this.redNodes.add(current);
+		} else {
+			this.notRedNodes.add(current);
+		}
+		if (other.getBlueNodes().contains(parallel)) {
+			this.blueNodes.add(current);
+		}
+
 		Node child;
 		Node newChild;
-		indexesOfNodes.put(parallel.getNumber(), current);
-		for (Map.Entry<String, Node> e: parallel.getChildren().entrySet()) {
-			label = e.getKey();
-			child = e.getValue();
-			newChild = new Node(child.getNumber());
-			current.addChild(label, newChild);
 
-			newChild.setAcceptingEndings(child.getAcceptingEndings());
-			newChild.setRejectingEndings(child.getRejectingEndings());
-			newChild.setAcceptingPathsSum(child.getAcceptingPathsSum());
-			newChild.setAcceptingPaths(child.getAcceptingPaths());
-			newChild.setRejectingPathsSum(child.getRejectingPathsSum());
-			newChild.setRejectingPaths(child.getRejectingPaths());
-			newChild.setStatus(child.getStatus());
-
-			if (other.getRedNodes().contains(child)) {
-				this.redNodes.add(newChild);
-			} else {
-				this.notRedNodes.add(newChild);
+		for (String label : alphabet) {
+			child = parallel.getChild(label);
+			if (child != null) {
+				newChild = new Node(child.getNumber());
+				current.addChild(label, newChild);
+				copyNodes(newChild, child, other);
 			}
-			if (other.getBlueNodes().contains(child)) {
-				this.blueNodes.add(newChild);
-			}
-
-			copyNodes(newChild, child, other);
 		}
 	}
 
