@@ -38,6 +38,10 @@ public class DictionaryGeneratorMain {
 			metaVar = "<smallest word length>")
 	private int startLength = 3;
 
+	@Option(name = "--randomseed", aliases = {"-seed"}, usage = "set random seed for all random components",
+			metaVar = "<seed>")
+	int seed = 770077;
+
 	private static Logger logger = Logger.getLogger("Logger");
 
 	private void launch(String... args) {
@@ -68,7 +72,7 @@ public class DictionaryGeneratorMain {
 			}
 		}
 
-		Random random = new Random();
+		Random random = new Random(seed);
 		logger.info("Starting generating file " + resultFilePath);
 		Automaton automaton = new Automaton(size);
 		for (int number = 1; number < size; number++) {

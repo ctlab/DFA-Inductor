@@ -37,6 +37,7 @@ public final class Settings {
 	public static int APTA_BOUND;
 	public static int RED_BOUND;
 	public static int SINKS_MODE;
+	public static int SEED;
 
 
 	public static EDSMWorker.EDSMHeuristic EDSM_HEURISTIC = null;
@@ -68,7 +69,8 @@ public final class Settings {
 			int HEURISTIC,
 			int APTA_BOUND,
 			int RED_BOUND,
-			int SINKS_MODE
+			int SINKS_MODE,
+	        int SEED
 	) {
 		Settings.FIND_ALL_MODE = FIND_ALL_MODE;
 		Settings.ITERATIVE_MODE = ITERATIVE_MODE;
@@ -97,6 +99,7 @@ public final class Settings {
 		Settings.APTA_BOUND = APTA_BOUND;
 		Settings.RED_BOUND = RED_BOUND;
 		Settings.SINKS_MODE = SINKS_MODE;
+		Settings.SEED = SEED;
 	}
 
 	public static int getSinksAmount() {

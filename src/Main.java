@@ -131,6 +131,10 @@ public class Main {
 			"exist", handler = BooleanOptionHandler.class)
 	private boolean extendFirst = true;
 
+	@Option(name = "--randomseed", aliases = {"-seed"}, usage = "set random seed for all random components",
+			metaVar = "<seed>")
+	int seed = 770077;
+
 	@Argument(usage = "dictionary file", metaVar = "<file>", required = true)
 	private String file;
 
@@ -176,7 +180,8 @@ public class Main {
 				heuristic,
 				aptaBound,
 				redBound,
-				sinksMode);
+				sinksMode,
+				seed);
 		Settings.EDSM_MODE = heuristic > 0;
 		boolean EDSMMode = Settings.EDSM_MODE;
 		switch (heuristic) {
