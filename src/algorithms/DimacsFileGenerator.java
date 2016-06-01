@@ -50,7 +50,7 @@ public class DimacsFileGenerator {
 	private List<List<Integer>> n;
 	private List<List<Integer>> o;
 	private List<Integer> f;
-	private String tmpFile = "tmp";
+	private String tmpFile;
 	private String dimacsFile;
 	private SBStrategy SB;
 	private int noisyP;
@@ -77,6 +77,7 @@ public class DimacsFileGenerator {
 		this.noisyP = Settings.ERRORS_PERCENT;
 		this.maxVar = 1;
 		this.dimacsFile = Settings.DIMACS_FILE;
+		this.tmpFile = "tmp" + dimacsFile;
 		this.alphabet = asSortedList(apta.getAlphabet());
 		this.ends = new ArrayList<>();
 		this.fixMode = Settings.LOOP_MODE;
