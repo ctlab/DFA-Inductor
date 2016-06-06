@@ -6,8 +6,6 @@ import structures.Node;
 
 import misc.Settings;
 
-import java.util.Random;
-
 public class EDSMWorker {
 
 	public enum EDSMHeuristic{
@@ -16,7 +14,6 @@ public class EDSMWorker {
 
 	private APTA apta;
 	private StateMerger merger;
-	private Random random = new Random(Settings.SEED);
 
 	public EDSMWorker(APTA apta) {
 		this.apta = apta;
@@ -57,7 +54,7 @@ public class EDSMWorker {
 			for (Node red : apta.getRedNodes()) {
 				score = mergeAndUndo(red, blue);
 				if (Settings.RANDOM_GREEDY_MODE && score > 0) {
-					score *= random.nextDouble();
+					score *= Settings.RANDOM.nextDouble();
 				}
 				if (score > pair.score || pair.score == 0) {
 					pair.update(red, blue, score);

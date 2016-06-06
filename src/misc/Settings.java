@@ -1,6 +1,7 @@
 package misc;
 
 import EDSM.EDSMWorker;
+import java.util.Random;
 
 public final class Settings {
 
@@ -38,6 +39,7 @@ public final class Settings {
 	public static int RED_BOUND;
 	public static int SINKS_MODE;
 	public static int SEED;
+    public static Random RANDOM;
 
 
 	public static EDSMWorker.EDSMHeuristic EDSM_HEURISTIC = null;
@@ -100,6 +102,7 @@ public final class Settings {
 		Settings.RED_BOUND = RED_BOUND;
 		Settings.SINKS_MODE = SINKS_MODE;
 		Settings.SEED = SEED;
+        Settings.RANDOM = new Random(SEED);
 	}
 
 	public static int getSinksAmount() {
